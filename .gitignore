@@ -105,11 +105,13 @@ cover/
 backend/instance/
 backend/uploads/
 .webassets-cache
+backend/cache/
 
 # Backend User Data
 #  This keeps only the empty testing data directories.
 #  todo: separate test data from user data -> ignore all user data
 backend/data-access/**
+
 
 !backend/data-access/user_data/
 backend/data-access/user_data/**
