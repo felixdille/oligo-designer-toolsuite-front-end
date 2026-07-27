@@ -147,6 +147,40 @@ def get_pipeline_run(run_id: ObjectId):
     return jsonify(formatted_run), HTTPStatus.OK
 
 
+@runs_bp.route("/api/runs/<ObjectId:run_id>/invalid-ids", methods=["GET"])
+def get_invalid_region_ids_for_run(run_id: ObjectId):
+    """Returns the invalid Region Ids for a pipeline run
+
+    Arguments:
+        run_id {ObjectId} -- The ObjectId of the run.
+
+    Returns:
+        list[str] -- A list of all Region Ids that could not be found in the database
+    """
+    # Auth or session check
+    run = get_run_or_404(run_id, require_ownership=True)
+
+    output_path = deserialize_path(run["output_path"])
+
+    if output_path is None:
+        abort(HTTPStatus.NOT_FOUND, description="Output Path could not be found")
+
+    invalid_region_ids_file_path = output_path / "db_probes" / "not_existing_regions_for_db_probes.txt"
+
+    with open(invalid_region_ids_file_path) as invalid_region_ids_file:
+        invalid_regions_count = int(invalid_region_ids_file.readline())
+        
+        invalid_regions_ids = (
+            invalid_region_ids_file.read().splitlines()
+            if invalid_regions_count > 0
+            else None
+        )
+
+    return jsonify(
+        invalid_regions_ids if invalid_regions_count > 0 else None,
+    ), HTTPStatus.OK
+
+
 @runs_bp.route("/api/runs/<ObjectId:run_id>/files/<path:filename>", methods=["GET"])
 def get_run_file(run_id: ObjectId, filename: str):
     """

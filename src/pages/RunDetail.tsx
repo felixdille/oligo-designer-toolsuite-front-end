@@ -43,6 +43,7 @@ import {
 import RunMetrics from "../components/RunMetrics";
 import RunDetailFileAction from "./RunDetailFileAction";
 import { PIPELINE_CONFIG, type PipelineConfig } from "../pipelineConfig/config";
+import { InvalidRegionWarning } from "../components/ui/InvalidRegionIdsWarning";
 
 interface LocationState {
     fromAdmin?: boolean;
@@ -574,6 +575,8 @@ const RunDetail = () => {
                                 </span>
                             </Vertical>
                             <Divider />
+
+                            <InvalidRegionWarning id={run._id}></InvalidRegionWarning>
 
                             <h2>File Downloads</h2>
                             {fileActions && (
