@@ -5,6 +5,7 @@ import App from "./App";
 import AuthProvider from "./contexts/AuthProvider";
 import RunsProvider from "./contexts/RunsProvider";
 import CacheProvider from "./contexts/CacheProvider";
+import { AutocompleteProvider } from "./contexts/AutocompleteProvider";
 const root = ReactDOM.createRoot(
     document.getElementById("root") as HTMLElement
 );
@@ -13,7 +14,9 @@ root.render(
         <RunsProvider>
             <AuthProvider>
                 <CacheProvider>
-                    <App />
+                    <AutocompleteProvider>
+                        <App />
+                    </AutocompleteProvider>
                 </CacheProvider>
             </AuthProvider>
         </RunsProvider>

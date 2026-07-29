@@ -3,6 +3,7 @@ import type { FieldProps } from "@rjsf/utils";
 import { Form, InputGroup } from "react-bootstrap";
 import { FiletypeTxt } from "react-bootstrap-icons";
 import { ToolTip } from "../ui/Tooltip";
+import { AutoCompleteTxtInput } from "./AutoCompleteTxtInput";
 
 /**
  * Renders a custom field, that allows users to input text or a file to input their desired gene targets.
@@ -57,9 +58,6 @@ const TxtUploadInput = (props: FieldProps) => {
         }
     };
 
-    const emptyStringToUndefined = (value: string) =>
-        value === "" ? undefined : value;
-
     return (
         <>
             <Form.Label htmlFor={fieldPathId.$id} className="super-label mb-1">
@@ -78,18 +76,12 @@ const TxtUploadInput = (props: FieldProps) => {
                 <InputGroup.Text className="border-start-0 ps-0">
                     Use all genes
                 </InputGroup.Text>
-                <Form.Control
-                    disabled={allGenesChecked}
-                    id={fieldPathId.$id}
-                    onBlur={() => onBlur(fieldPathId.$id, formData)}
-                    type="input"
-                    onChange={(e) =>
-                        onChange(
-                            emptyStringToUndefined(e.target.value),
-                            fieldPathId.path
-                        )
-                    }
-                    value={formData || ""}
+                <AutoCompleteTxtInput
+                    allGenesChecked={allGenesChecked}
+                    fieldPathId={fieldPathId}
+                    formData={formData}
+                    onBlur={onBlur}
+                    onChange={onChange}
                 />
                 <Form.Control
                     type="file"

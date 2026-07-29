@@ -1,0 +1,23 @@
+.autocomplete-genes-form-group {
+  position: relative;
+}
+
+.autocomplete-genes-list-group {
+  position: absolute;
+  width: 100%;
+  top: 4 rem;
+  left: 0;
+  z-index: 100;
+}
+
+.autocomplete-genes-list-group-item {
+  padding: 0.3rem 1.3rem;
+  background-color: #fff;
+  background: #fff;
+}
+
+.autocomplete-genes-list-group-item:hover {
+  cursor: pointer;
+  background: #646464;
+  color: #fff;
+}

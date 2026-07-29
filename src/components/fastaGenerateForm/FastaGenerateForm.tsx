@@ -33,6 +33,7 @@ import type { DropDown, NestedObject } from "../componentTypes";
 import { getDefaultFormState, type RJSFSchema } from "@rjsf/utils";
 import { customizeValidator } from "@rjsf/validator-ajv8";
 import Ajv2020 from "ajv/dist/2020";
+import { useAutoComplete } from "../../hooks/useAutocomplete";
 
 // Props for FastaGenerateForm, containing current form state and handlers for change/removal.
 interface FastaGenerateFormProps {
@@ -64,6 +65,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
         const [isLoading, setIsLoading] = useState(true);
         const [error, setError] = useState<string | null>(null);
         const [dropDown, setDropDown] = useState<DropDown>();
+        const { addAutocompleteRegion } = useAutoComplete();
 
         const genomicDefaults = useMemo(() => {
             const subschemas =
@@ -224,11 +226,12 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
         };
 
         const handleSave = () => {
-            onChange(
+            const currentFormState =
                 formState.selectedSource === "ncbi"
                     ? formState.formDataNcbi
-                    : formState.formDataEnsembl
-            );
+                    : formState.formDataEnsembl;
+            onChange(currentFormState);
+            addAutocompleteRegion(currentFormState);
             closeModal();
         };
 
