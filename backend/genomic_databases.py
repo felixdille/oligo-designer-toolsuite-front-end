@@ -1,5 +1,6 @@
 """Shared file for retrieving genomic resources using genomic databases."""
 
+from typing import Any
 import datetime
 import ftplib
 import gzip
@@ -29,6 +30,20 @@ class GenomicEntity:
     taxon: str | None
     species: str
     release: str
+
+    @staticmethod
+    def from_region_form(region_form: dict[str, Any]):
+        source_params = region_form.get("source_params", {})
+        taxon = source_params.get("taxon")
+        species = source_params.get("species")
+        ann_rel = str(source_params.get("annotation_release"))
+
+        if species is None or ann_rel is None:
+            raise ValueError(
+                "Genomic region generation requires 'species' and 'annotation_release' in source_params."
+            )
+
+        return GenomicEntity(taxon=taxon, species=species, release=ann_rel)
 
 
 @dataclass(frozen=True)
@@ -127,7 +142,9 @@ class BaseGenomicDatabase(ABC):
             non_dir_extensions = {"txt", "pdf", "gz"}
             _, _, file_suffix = filename.rpartition(".")
 
-            return perms[0] == "d" or (perms[0] == "l" and file_suffix not in non_dir_extensions)
+            return perms[0] == "d" or (
+                perms[0] == "l" and file_suffix not in non_dir_extensions
+            )
 
         dirs = [
             filename
@@ -147,10 +164,14 @@ class BaseGenomicDatabase(ABC):
             list[str] -- list of all directories that are also in the allowlist.
         """
         if self.allowlist is not None:
-            return sorted(list(set(dirs).intersection(self.allowlist)))  # sort for determinism
+            return sorted(
+                list(set(dirs).intersection(self.allowlist))
+            )  # sort for determinism
         return dirs
 
-    def _get_subdirectories(self, dirs: list[str], ftp: ftplib.FTP) -> dict[str, list[str]]:
+    def _get_subdirectories(
+        self, dirs: list[str], ftp: ftplib.FTP
+    ) -> dict[str, list[str]]:
         """Retrieves all subdirectories of all directories in dirs.
 
         Arguments:
@@ -167,7 +188,9 @@ class BaseGenomicDatabase(ABC):
         return subdirectories_by_directory
 
     @abstractmethod
-    def _build_species_mapping(self, species_dirs: dict[str, list[str]]) -> dict[str, list[str]]:
+    def _build_species_mapping(
+        self, species_dirs: dict[str, list[str]]
+    ) -> dict[str, list[str]]:
         """Builds the result of fetch_species_mapping.
 
         Arguments:
@@ -225,7 +248,9 @@ class BaseGenomicDatabase(ABC):
         # Build local file path to save file at
         if self.cache_dir is None:
             raise RuntimeError("No caching directory set for genomic downloads.")
-        file_path = (self.cache_dir / self.name / f"{url_hash}-{remote_filename}").resolve()
+        file_path = (
+            self.cache_dir / self.name / f"{url_hash}-{remote_filename}"
+        ).resolve()
         file_path.parent.mkdir(parents=True, exist_ok=True)
 
         headers: dict[str, str] = {}
@@ -245,13 +270,18 @@ class BaseGenomicDatabase(ABC):
             if response.status_code == requests.codes.ok:
                 # Download the remote file
                 with open(file_path, "wb") as f:
-                    for chunk in response.iter_content(chunk_size=Config.DOWNLOAD_CHUNK_SIZE):
+                    for chunk in response.iter_content(
+                        chunk_size=Config.DOWNLOAD_CHUNK_SIZE
+                    ):
                         f.write(chunk)
 
                 # Set local modification time to remote's 'last-modified' to use for future requests
                 if last_modified := response.headers.get("last-modified"):
                     new_mtime = parsedate_to_datetime(last_modified).timestamp()
-                    os.utime(file_path, times=(datetime.datetime.now().timestamp(), new_mtime))
+                    os.utime(
+                        file_path,
+                        times=(datetime.datetime.now().timestamp(), new_mtime),
+                    )
         return file_path
 
     @abstractmethod
@@ -271,7 +301,9 @@ class BaseGenomicDatabase(ABC):
         pass
 
     @file_cache_region.cache_on_arguments()
-    def _download_and_process(self, dir: str, remote_filename: str, expected_checksum: str | None) -> Path:
+    def _download_and_process(
+        self, dir: str, remote_filename: str, expected_checksum: str | None
+    ) -> Path:
         """Downloads a remote file and processes it as needed.
 
         Arguments:
@@ -296,7 +328,9 @@ class BaseGenomicDatabase(ABC):
 
         # Verify checksum if provided. On mismatch, delete the cached file and retry the
         # download once before giving up.
-        if expected_checksum is not None and not self._matches_checksum(file_path, expected_checksum):
+        if expected_checksum is not None and not self._matches_checksum(
+            file_path, expected_checksum
+        ):
             file_path.unlink(missing_ok=True)
             file_path = self._download(dir, remote_filename)
             if not self._matches_checksum(file_path, expected_checksum):
@@ -403,6 +437,30 @@ class BaseGenomicDatabase(ABC):
                 f"Required file missing in {self.name}'s {self.checksums_filename}: {e}"
             ) from e
 
+    def _fetch_genomic_data_file(
+        self, checksum_map: dict[str, str], remote_filename: str, remote_dir: str
+    ):
+        # Verify checksum is known
+        annotation_checksum = self._get_checksum(checksum_map, remote_filename)
+        # Download from source, verify checksum of compressed file and extract if necessary
+        annotation_file = self._download_and_process(
+            remote_dir, remote_filename, annotation_checksum
+        )
+
+        return annotation_file
+
+    def fetch_annotation_file(self, entity: GenomicEntity):
+        # Obtain GenomicEntityContext (file names, location, etc.) using subclass-specific implementation
+        context = self._get_entity_context(entity)
+        # Obtain filename-to-checksum map
+        checksum_map = self._get_checksum_map(context)
+
+        return self._fetch_genomic_data_file(
+            checksum_map,
+            context.annotation_remote_filename,
+            context.annotation_remote_dir,
+        )
+
     def fetch_genomic_entity(self, entity: GenomicEntity) -> dict[str, str]:
         """Fetches genomic entity from cache or downloads it if not cached yet.
 
@@ -425,19 +483,17 @@ class BaseGenomicDatabase(ABC):
         checksum_map = self._get_checksum_map(context)
 
         # --- Annotation (GTF) ---
-        # Verify checksum is known
-        annotation_checksum = self._get_checksum(checksum_map, context.annotation_remote_filename)
-        # Download from source, verify checksum of compressed file and extract if necessary
-        annotation_file = self._download_and_process(
-            context.annotation_remote_dir, context.annotation_remote_filename, annotation_checksum
+        annotation_file = self._fetch_genomic_data_file(
+            checksum_map,
+            context.annotation_remote_filename,
+            context.annotation_remote_dir,
         )
 
         # --- Sequence (FASTA) ---
-        # Verify checksum is known
-        sequence_checksum = self._get_checksum(checksum_map, context.sequence_remote_filename)
-        # Download from source, verify checksum of compressed file and extract if necessary
-        sequence_file = self._download_and_process(
-            context.sequence_remote_dir, context.sequence_remote_filename, sequence_checksum
+        sequence_file = self._fetch_genomic_data_file(
+            checksum_map,
+            context.sequence_remote_filename,
+            context.annotation_remote_dir,
         )
 
         return {
@@ -458,7 +514,9 @@ class EnsemblGenomicDatabase(BaseGenomicDatabase):
 
     # ---- Directory Discovery ----
     @override
-    def _get_subdirectories(self, dirs: list[str], ftp: ftplib.FTP) -> dict[str, list[str]]:
+    def _get_subdirectories(
+        self, dirs: list[str], ftp: ftplib.FTP
+    ) -> dict[str, list[str]]:
         """Retrieves all species for each release directory in dirs.
 
         Arguments:
@@ -472,7 +530,9 @@ class EnsemblGenomicDatabase(BaseGenomicDatabase):
         return super()._get_subdirectories(lookup_dirs, ftp)
 
     @override
-    def _build_species_mapping(self, species_dirs: dict[str, list[str]]) -> dict[str, list[str]]:
+    def _build_species_mapping(
+        self, species_dirs: dict[str, list[str]]
+    ) -> dict[str, list[str]]:
         """Builds the result of fetch_species_mapping.
 
         Arguments:
@@ -531,13 +591,17 @@ class EnsemblGenomicDatabase(BaseGenomicDatabase):
             bool -- Whether the file matches the expected checksum.
         """
         try:
-            result = subprocess.run(["sum", file_path], capture_output=True, check=True, text=True)
+            result = subprocess.run(
+                ["sum", file_path], capture_output=True, check=True, text=True
+            )
             computed_checksum = result.stdout.split(maxsplit=1)[0]
             return computed_checksum == expected_checksum
         except subprocess.CalledProcessError:
             return False
 
-    def _pick_files(self, annotation_remote_dir: str, sequence_remote_dir: str) -> tuple[str, str, str]:
+    def _pick_files(
+        self, annotation_remote_dir: str, sequence_remote_dir: str
+    ) -> tuple[str, str, str]:
         """Chooses annotation (GTF) and sequence (FASTA) files from specified remote directories.
 
         Arguments:
@@ -573,7 +637,9 @@ class EnsemblGenomicDatabase(BaseGenomicDatabase):
                 # Take first filename that ends with NUMBER.gtf.gz
                 if re.search(r"\d+\.gtf.gz$", name):
                     return name
-            raise RuntimeError(f"No suitable annotation (GTF) file found in {annotation_remote_dir}.")
+            raise RuntimeError(
+                f"No suitable annotation (GTF) file found in {annotation_remote_dir}."
+            )
 
         def select_sequence_file(filenames: list[str]) -> str:
             """Selects sequence (FASTA) file from candidates based on filenames.
@@ -620,9 +686,13 @@ class EnsemblGenomicDatabase(BaseGenomicDatabase):
             # Try to parse assembly from annotation filename
             # e.g. Homo_sapiens.GRCh38.116.gtf.gz -> GRCh38
             # e.g. Acanthochromis_polyacanthus.ASM210954v1.116.gtf.gz -> ASM210954v1
-            assembly_from_annotation_match = re.match(r"^[A-Za-z_]+\.(.+)\.\d+", annotation_filename)
+            assembly_from_annotation_match = re.match(
+                r"^[A-Za-z_]+\.(.+)\.\d+", annotation_filename
+            )
             assembly_from_annotation = (
-                assembly_from_annotation_match.group(1) if assembly_from_annotation_match else None
+                assembly_from_annotation_match.group(1)
+                if assembly_from_annotation_match
+                else None
             )
 
             # Select sequence (FASTA) file
@@ -633,13 +703,19 @@ class EnsemblGenomicDatabase(BaseGenomicDatabase):
             # Try to parse assembly from sequence filename
             # e.g. Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz -> GRCh38
             # e.g. Acanthochromis_polyacanthus.ASM210954v1.dna.toplevel.fa.gz -> ASM210954v1
-            assembly_from_sequence_match = re.match(r"^[A-Za-z_]+\.(.+)\.dna\.", sequence_filename)
+            assembly_from_sequence_match = re.match(
+                r"^[A-Za-z_]+\.(.+)\.dna\.", sequence_filename
+            )
             assembly_from_sequence = (
-                assembly_from_sequence_match.group(1) if assembly_from_sequence_match else None
+                assembly_from_sequence_match.group(1)
+                if assembly_from_sequence_match
+                else None
             )
 
         # Prefer assembly parsed from sequence; assembly parsed from annotation as fallback
-        genome_assembly = assembly_from_sequence or assembly_from_annotation or "unknown"
+        genome_assembly = (
+            assembly_from_sequence or assembly_from_annotation or "unknown"
+        )
 
         return annotation_filename, sequence_filename, genome_assembly
 
@@ -654,7 +730,9 @@ class EnsemblGenomicDatabase(BaseGenomicDatabase):
             GenomicEntityContext -- Context for the requested entity.
         """
         # Treat numeric releases as a special case
-        annotation_release = f"release-{entity.release}" if entity.release.isdigit() else entity.release
+        annotation_release = (
+            f"release-{entity.release}" if entity.release.isdigit() else entity.release
+        )
 
         # Build remote directories for annotation (GTF) and sequence (FASTA) files
         base_release_path = f"{self.base_path}/{annotation_release}"
@@ -662,8 +740,8 @@ class EnsemblGenomicDatabase(BaseGenomicDatabase):
         sequence_remote_dir = f"{base_release_path}/fasta/{entity.species}/dna"
 
         # Resolve filenames and assembly
-        annotation_remote_filename, sequence_remote_filename, genome_assembly = self._pick_files(
-            annotation_remote_dir, sequence_remote_dir
+        annotation_remote_filename, sequence_remote_filename, genome_assembly = (
+            self._pick_files(annotation_remote_dir, sequence_remote_dir)
         )
 
         return GenomicEntityContext(
@@ -687,7 +765,9 @@ class NCBIGenomicDatabase(BaseGenomicDatabase):
 
     # ---- Directory Discovery ----
     @override
-    def _build_species_mapping(self, species_dirs: dict[str, list[str]]) -> dict[str, list[str]]:
+    def _build_species_mapping(
+        self, species_dirs: dict[str, list[str]]
+    ) -> dict[str, list[str]]:
         """Builds the result of fetch_species_mapping.
 
         Arguments:
@@ -698,7 +778,9 @@ class NCBIGenomicDatabase(BaseGenomicDatabase):
         """
         return species_dirs
 
-    def _get_all_releases_dir(self, ftp: ftplib.FTP, taxon: str, species: str) -> str | None:
+    def _get_all_releases_dir(
+        self, ftp: ftplib.FTP, taxon: str, species: str
+    ) -> str | None:
         """Searches for the remote directory containing all releases for a specific species.
 
         Arguments:
@@ -819,7 +901,9 @@ class NCBIGenomicDatabase(BaseGenomicDatabase):
 
         return digest.hexdigest() == expected_checksum
 
-    def _resolve_release_and_dir(self, entity: GenomicEntity) -> tuple[str, str, str, str]:
+    def _resolve_release_and_dir(
+        self, entity: GenomicEntity
+    ) -> tuple[str, str, str, str]:
         """Resolves release, assembly and remote release directory.
 
         Arguments:
@@ -847,9 +931,13 @@ class NCBIGenomicDatabase(BaseGenomicDatabase):
             ftp.login()
 
             # Look up directory of all releases
-            all_releases_dir = self._get_all_releases_dir(ftp, entity.taxon, entity.species)
+            all_releases_dir = self._get_all_releases_dir(
+                ftp, entity.taxon, entity.species
+            )
             if all_releases_dir is None:
-                raise RuntimeError("Could not fetch the directory containing all releases.")
+                raise RuntimeError(
+                    "Could not fetch the directory containing all releases."
+                )
 
             release_dir = f"{all_releases_dir}/{release}"
             ftp.cwd(release_dir)
@@ -868,13 +956,19 @@ class NCBIGenomicDatabase(BaseGenomicDatabase):
 
             # Find assembly report to get assembly name and RefSeq assembly accession
             assembly_report = min(
-                (filename for filename in ftp.nlst() if filename.endswith("_assembly_report.txt")),
+                (
+                    filename
+                    for filename in ftp.nlst()
+                    if filename.endswith("_assembly_report.txt")
+                ),
                 default=None,
             )
             if not assembly_report:
                 raise RuntimeError(f"No assembly report found in {release_dir}.")
 
-            assembly_name, accession = self._get_assembly_information(release_dir, assembly_report)
+            assembly_name, accession = self._get_assembly_information(
+                release_dir, assembly_report
+            )
 
             # Directories may have an additional level of nesting
             nested_subdir = f"{accession}_{assembly_name}"
@@ -894,7 +988,9 @@ class NCBIGenomicDatabase(BaseGenomicDatabase):
         Returns:
             GenomicEntityContext -- Context for the requested entity.
         """
-        annotation_release, genome_assembly, accession, remote_dir = self._resolve_release_and_dir(entity)
+        annotation_release, genome_assembly, accession, remote_dir = (
+            self._resolve_release_and_dir(entity)
+        )
 
         annotation_remote_dir = sequence_remote_dir = remote_dir
         annotation_remote_filename = f"{accession}_{genome_assembly}_genomic.gtf.gz"
@@ -934,3 +1030,16 @@ def fetch_dropdown_options() -> dict[str, dict[str, list[str]]]:
     ]
 
     return {database.name: database.fetch_species_mapping() for database in databases}
+
+
+def get_genomic_database_by_region_form(
+    region_form: dict[str, Any], *genomic_database_args, **genomic_database_kwargs
+):
+    # ---------------------------------------------
+    # Determine which upstream (NCBI or Ensembl) we are caching from, then always run in custom mode
+    # ---------------------------------------------
+    source_val = region_form.get("source", "").lower()
+    if source_val == "ensembl":
+        return EnsemblGenomicDatabase(*genomic_database_args, **genomic_database_kwargs)
+    else:
+        return NCBIGenomicDatabase(*genomic_database_args, **genomic_database_kwargs)

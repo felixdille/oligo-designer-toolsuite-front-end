@@ -1,5 +1,6 @@
 """Overwrites of the Pydantic Models from ODT are done here."""
 
+from pydantic import TypeAdapter
 import json
 from typing import Annotated, Literal
 
@@ -119,11 +120,14 @@ class GenomicRegionGeneratorEnsembl(GenomicRegionGeneratorBase):
     genomic_regions: GenomicRegionsEnsembl
     pass
 
+GenomicRegionGenerator = Annotated[GenomicRegionGeneratorNcbi | GenomicRegionGeneratorEnsembl, Field(discriminator="source")]
+
+GenomicRegionGeneratorAdapter = TypeAdapter(GenomicRegionGenerator)
 
 # TODO: remove override when Model exists from ODT side
 # This Model allows a list of Genomic Region Generator Forms with either Ncbi or Ensembl
 # as the source.
-GenomicInput = list[GenomicRegionGeneratorNcbi | GenomicRegionGeneratorEnsembl]
+GenomicInput = list[GenomicRegionGenerator]
 
 
 class TargetProbeOligoGeneration(TargetProbeOligoGenerationBase):

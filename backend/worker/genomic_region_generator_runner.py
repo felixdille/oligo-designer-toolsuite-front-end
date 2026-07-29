@@ -3,6 +3,8 @@
 All functionality related to handling, executing and configuring the Genomic Region Generator should be added in this class.
 """
 
+from backend.config import Config
+from backend.genomic_databases import get_genomic_database_by_region_form
 import os
 import uuid
 from logging import Logger
@@ -42,8 +44,7 @@ class GenomicRegionGeneratorRunner:
         """
         self.logger = logger
 
-        # TODO: read this path from config
-        self.cache_dir = (Path(os.path.dirname(__file__)) / "../cache").resolve()
+        self.cache_dir = Config.CACHE_DIR
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
     def run(self, region_form: dict[str, Any]) -> list[str]:
@@ -81,28 +82,12 @@ class GenomicRegionGeneratorRunner:
         output_path = self.cache_dir / "generated" / f"cached_genomic_{uuid.uuid4().hex}"
         output_path.mkdir(parents=True, exist_ok=True)
 
-        # ---------------------------------------------
-        # Determine which upstream (NCBI or Ensembl) we are caching from, then always run in custom mode
-        # ---------------------------------------------
-        source_params = region_form.get("source_params", {})
-        taxon = source_params.get("taxon")
-        species = source_params.get("species")
-        ann_rel = str(source_params.get("annotation_release"))
-        if species is None or ann_rel is None:
-            raise ValueError(
-                "Genomic region generation requires 'species' and 'annotation_release' in source_params."
-            )
-        genomic_entity = GenomicEntity(taxon=taxon, species=species, release=ann_rel)
+        genomic_entity = GenomicEntity.from_region_form(region_form)
 
-        source_val = region_form.get("source", "").lower()
-        if source_val == "ensembl":
-            # Ensembl second-line cache
-            cache_info = EnsemblGenomicDatabase(cache_dir=self.cache_dir).fetch_genomic_entity(genomic_entity)
-            files_source = "Ensembl"
-        else:
-            # Default to NCBI second-line cache
-            cache_info = NCBIGenomicDatabase(cache_dir=self.cache_dir).fetch_genomic_entity(genomic_entity)
-            files_source = "NCBI"
+        genomic_database = get_genomic_database_by_region_form(region_form, cache_dir=self.cache_dir)
+
+        cache_info = genomic_database.fetch_genomic_entity(genomic_entity)
+        files_source = "Ensembl" if genomic_database.name == "ensembl" else "NCBI"
 
         genome_assembly = cache_info["genome_assembly"]
         resolved_rel = cache_info["annotation_release"]
@@ -118,7 +103,7 @@ class GenomicRegionGeneratorRunner:
                 "file_annotation": annotation_file,  # required: GTF
                 "file_sequence": sequence_file,  # required: FASTA
                 "files_source": files_source,  # optional: original source
-                "species": species,  # optional
+                "species": genomic_entity.species,  # optional
                 "annotation_release": to_int(resolved_rel) if resolved_rel.isdigit() else resolved_rel,
                 "genome_assembly": genome_assembly,  # optional
             },

@@ -10,6 +10,7 @@ configuration mechanism independent of Flask.
 See .env.sample for available configuration options.
 """
 
+from pathlib import Path
 import os
 from collections.abc import Mapping
 from datetime import timedelta
@@ -101,6 +102,7 @@ class Config:
     REDIS_QUEUE_ACCOUNTING_LOCK_KEY = "pipelines:queue_accounting_lock"
     REDIS_QUEUE_ACCOUNTING_LOCK_TIMEOUT = int(os.environ.get("REDIS_QUEUE_ACCOUNTING_LOCK_TIMEOUT", 30))
     CELERY_PIPELINE_RUN_STAMP = "pipeline_run_id"
+    CACHE_DIR = Path(os.environ.get("CACHE_DIR", (Path(os.path.dirname(__file__)) / "cache").resolve()))
 
     @staticmethod
     def get_logging_config() -> dict:

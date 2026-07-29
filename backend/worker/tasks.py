@@ -1,5 +1,8 @@
 """Tasks that can be run via celery and their helpers are defined here."""
 
+from backend.worker.autocomplete_preparator import build_autocomplete_options
+from backend.genomic_databases import GenomicEntity
+from backend.genomic_databases import get_genomic_database_by_region_form
 import calendar
 import datetime
 import os
@@ -113,15 +116,24 @@ def _delete_file_or_directory_if_under_root(path_value: Any, root: Path, is_dir:
         return False, False  # path outside root or invalid — don't touch the DB record
 
     if not file_or_directory_path.exists():
-        return True, False  # file already gone — safe to delete the DB record, nothing deleted on disk
+        return (
+            True,
+            False,
+        )  # file already gone — safe to delete the DB record, nothing deleted on disk
 
     if is_dir:
         if not file_or_directory_path.is_dir():
-            return False, False  # unexpected type (e.g. a file) — retain the DB record to avoid data loss
+            return (
+                False,
+                False,
+            )  # unexpected type (e.g. a file) — retain the DB record to avoid data loss
         shutil.rmtree(file_or_directory_path)
     else:
         if not file_or_directory_path.is_file():
-            return False, False  # unexpected type (e.g. directory) — retain the DB record to avoid data loss
+            return (
+                False,
+                False,
+            )  # unexpected type (e.g. directory) — retain the DB record to avoid data loss
         file_or_directory_path.unlink()
 
     return True, True  # file deleted from disk and DB record is safe to remove
@@ -338,7 +350,10 @@ def _cleanup_expired_anonymous_data(db, upload_root: Path, userdata_root: Path, 
 
 @app.task(base=PipelineTask)
 def run_pipeline(
-    generated_region_paths: list[tuple[str, list[str]]], pipeline_name: str, form_data: Any, output_path: str
+    generated_region_paths: list[tuple[str, list[str]]],
+    pipeline_name: str,
+    form_data: Any,
+    output_path: str,
 ) -> None:
     """Runs the pipeline via the `PipelineRunner` class.
 
@@ -348,7 +363,9 @@ def run_pipeline(
         form_data {Any} -- The pipeline configuration.
         output_path {str} -- The path where all output of the pipeline should be written.
     """
-    from backend.worker.pipeline_runner import PipelineRunner  # lazy: avoids Bio at import time
+    from backend.worker.pipeline_runner import (
+        PipelineRunner,
+    )  # lazy: avoids Bio at import time
 
     runner = PipelineRunner(pipeline_name, logger=logger)
     runner.run(form_data, output_path, generated_region_paths)
@@ -444,7 +461,11 @@ def generate_monthly_report(target_year: int | None = None, target_month: int | 
 
         active_users = len(
             db.runs.distinct(
-                "user_id", {"created_at": {"$gte": start_dt, "$lt": end_dt}, "user_id": {"$nin": [None, ""]}}
+                "user_id",
+                {
+                    "created_at": {"$gte": start_dt, "$lt": end_dt},
+                    "user_id": {"$nin": [None, ""]},
+                },
             )
         )
 
@@ -544,3 +565,15 @@ def cleanup_anonymous_data() -> dict[str, int]:
 
     print(f"Anonymous cleanup completed: {result}")
     return result
+
+
+@app.task()
+def generate_autocomplete_options(region_form: dict[str, Any], genomic_entity_dict: dict[str, Any]):
+
+    genomic_entity = GenomicEntity(**genomic_entity_dict)
+
+    genomic_database = get_genomic_database_by_region_form(region_form, cache_dir=Config.CACHE_DIR)
+
+    annotation_file = str(genomic_database.fetch_annotation_file(genomic_entity))
+
+    return build_autocomplete_options(annotation_file)
