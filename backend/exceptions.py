@@ -15,10 +15,12 @@ class ODTPipelineError(ODTCloudError):
     Raised when the Oligo Designer Toolsuite pipeline execution fails.
     """
 
+
 class ODTNoValidRegionIdsError(ODTCloudError):
     """
     Raised when the Oligo Designer Toolsuite could not find a single provided Region Id in the genome.
     """
+
 
 class ODTEmptyResultError(ODTCloudError):
     """

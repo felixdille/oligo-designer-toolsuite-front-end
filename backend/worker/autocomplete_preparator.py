@@ -1,7 +1,8 @@
-from typing import cast
-from backend.cache import generic_cache_region
 from pathlib import Path
+
 from oligo_designer_toolsuite.utils import GffParser
+
+from backend.cache import generic_cache_region
 
 
 @generic_cache_region.cache_on_arguments()

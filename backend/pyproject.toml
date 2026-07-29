@@ -71,3 +71,4 @@ project-excludes = [
 infer-with-first-use = false
 preset = "default"
 min-severity = "warn"
+conda-environment = "odt"

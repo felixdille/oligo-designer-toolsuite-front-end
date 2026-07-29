@@ -7,21 +7,20 @@ Other endpoints are standalone: they run the full pipeline and return the output
 """
 
 from dataclasses import asdict
-from celery.result import AsyncResult
-from backend.worker.task_index import Tasks
-from backend.extensions import celery_app
-from multiprocessing.sharedctypes import Value
-from backend.config import Config
-from backend.genomic_databases import get_genomic_database_by_region_form
-from backend.genomic_databases import GenomicEntity
-from pydantic import ValidationError
-from flask import request, Blueprint, abort, jsonify
 from http import HTTPStatus
 
-from backend.genomic_databases import NCBIGenomicDatabase, fetch_dropdown_options
+from celery.result import AsyncResult
+from flask import Blueprint, abort, jsonify, request
+from pydantic import ValidationError
 
+from backend.extensions import celery_app
+from backend.genomic_databases import (
+    GenomicEntity,
+    NCBIGenomicDatabase,
+    fetch_dropdown_options,
+)
 from backend.worker.models import GenomicRegionGeneratorAdapter
-
+from backend.worker.task_index import Tasks
 
 genomic_bp = Blueprint("genomic", __name__)
 

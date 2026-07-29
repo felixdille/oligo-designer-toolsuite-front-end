@@ -1,8 +1,5 @@
 """Tasks that can be run via celery and their helpers are defined here."""
 
-from backend.worker.autocomplete_preparator import build_autocomplete_options
-from backend.genomic_databases import GenomicEntity
-from backend.genomic_databases import get_genomic_database_by_region_form
 import calendar
 import datetime
 import os
@@ -17,8 +14,13 @@ from celery.utils.log import get_task_logger
 
 from backend.config import CeleryConfig, Config
 from backend.database import mongo_database
-from backend.genomic_databases import fetch_dropdown_options
+from backend.genomic_databases import (
+    GenomicEntity,
+    fetch_dropdown_options,
+    get_genomic_database_by_region_form,
+)
 from backend.utils import utc_now
+from backend.worker.autocomplete_preparator import build_autocomplete_options
 from backend.worker.celery import app
 from backend.worker.genomic_region_generator_runner import GenomicRegionGeneratorRunner
 from backend.worker.handlers import PipelineTask

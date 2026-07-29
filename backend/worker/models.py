@@ -1,6 +1,5 @@
 """Overwrites of the Pydantic Models from ODT are done here."""
 
-from pydantic import TypeAdapter
 import json
 from typing import Annotated, Literal
 
@@ -36,7 +35,7 @@ from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
 from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
     TargetProbeSpecificityFilter as TargetProbeSpecificityFilterBase,
 )
-from pydantic import AliasChoices, BaseModel, Field
+from pydantic import AliasChoices, BaseModel, Field, TypeAdapter
 
 ### Genomic Region Generator Models ###
 
@@ -120,7 +119,10 @@ class GenomicRegionGeneratorEnsembl(GenomicRegionGeneratorBase):
     genomic_regions: GenomicRegionsEnsembl
     pass
 
-GenomicRegionGenerator = Annotated[GenomicRegionGeneratorNcbi | GenomicRegionGeneratorEnsembl, Field(discriminator="source")]
+
+GenomicRegionGenerator = Annotated[
+    GenomicRegionGeneratorNcbi | GenomicRegionGeneratorEnsembl, Field(discriminator="source")
+]
 
 GenomicRegionGeneratorAdapter = TypeAdapter(GenomicRegionGenerator)
 

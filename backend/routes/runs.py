@@ -169,11 +169,9 @@ def get_invalid_region_ids_for_run(run_id: ObjectId):
 
     with open(invalid_region_ids_file_path) as invalid_region_ids_file:
         invalid_regions_count = int(invalid_region_ids_file.readline())
-        
+
         invalid_regions_ids = (
-            invalid_region_ids_file.read().splitlines()
-            if invalid_regions_count > 0
-            else None
+            invalid_region_ids_file.read().splitlines() if invalid_regions_count > 0 else None
         )
 
     return jsonify(

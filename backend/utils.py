@@ -4,17 +4,17 @@ therefore it intentionally imports only from the standard library so it can be
 shared without introducing cross-boundary dependencies.
 """
 
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
-from backend.genomic_databases import NCBIGenomicDatabase
-from backend.genomic_databases import EnsemblGenomicDatabase
-from backend.genomic_databases import GenomicEntity
-from datetime import UTC, datetime
+
+from backend.genomic_databases import EnsemblGenomicDatabase, GenomicEntity, NCBIGenomicDatabase
 
 
 def utc_now() -> datetime:
     """Return a timezone-aware UTC timestamp."""
     return datetime.now(UTC)
+
 
 def retrieve_genomic_data_from_region_form(region_form: dict[str, Any], cache_dir: Path):
     genomic_entity = GenomicEntity.from_region_form(region_form)
@@ -31,7 +31,5 @@ def retrieve_genomic_data_from_region_form(region_form: dict[str, Any], cache_di
         # Default to NCBI second-line cache
         cache_info = NCBIGenomicDatabase(cache_dir=cache_dir).fetch_genomic_entity(genomic_entity)
         files_source = "NCBI"
-    
+
     return cache_info, files_source
-
-

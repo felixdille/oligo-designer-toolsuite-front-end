@@ -3,8 +3,6 @@
 All functionality related to handling, executing and configuring the Genomic Region Generator should be added in this class.
 """
 
-from backend.config import Config
-from backend.genomic_databases import get_genomic_database_by_region_form
 import os
 import uuid
 from logging import Logger
@@ -18,8 +16,12 @@ from oligo_designer_toolsuite.pipelines._genomic_region_generator import (
 )
 
 from backend.cache import file_cache_region
+from backend.config import Config
 from backend.exceptions import ODTPipelineError
-from backend.genomic_databases import EnsemblGenomicDatabase, GenomicEntity, NCBIGenomicDatabase
+from backend.genomic_databases import (
+    GenomicEntity,
+    get_genomic_database_by_region_form,
+)
 from backend.worker.converters import to_bool, to_int
 from backend.worker.utils import build_fallback_error_message
 

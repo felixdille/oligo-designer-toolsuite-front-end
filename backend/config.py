@@ -10,10 +10,10 @@ configuration mechanism independent of Flask.
 See .env.sample for available configuration options.
 """
 
-from pathlib import Path
 import os
 from collections.abc import Mapping
 from datetime import timedelta
+from pathlib import Path
 
 from dotenv import load_dotenv
 

@@ -1,6 +1,5 @@
 """Defines PipelineRunner and bundles all functionality regarding running and handling a pipeline run."""
 
-from backend.exceptions import ODTNoValidRegionIdsError
 import json
 import os
 import tempfile
@@ -9,11 +8,11 @@ from typing import Any
 
 import yaml
 from glom import assign, glom
-from oligo_designer_toolsuite._exceptions import OligoDesignerError, NoValidRegionIdError
+from oligo_designer_toolsuite._exceptions import NoValidRegionIdError, OligoDesignerError
 from pydantic import ValidationError
 
 from backend.constants import PIPELINE_FILE_INPUT, PIPELINE_MODELS
-from backend.exceptions import ODTEmptyResultError, ODTPipelineError
+from backend.exceptions import ODTEmptyResultError, ODTNoValidRegionIdsError, ODTPipelineError
 from backend.worker.genomic_regions_file import GenomicRegionsFile
 from backend.worker.utils import build_fallback_error_message
 
@@ -199,7 +198,9 @@ class PipelineRunner:
         except ValidationError as e:
             raise ODTPipelineError(f"Invalid configuration file: {e!s}")
         except NoValidRegionIdError:
-            raise ODTNoValidRegionIdsError("No Region Id could be mapped to a Gene. Please check your Region Id list")
+            raise ODTNoValidRegionIdsError(
+                "No Region Id could be mapped to a Gene. Please check your Region Id list"
+            )
         except (OligoDesignerError, ValueError):
             raise ODTPipelineError(fallback_error_message)
         except SystemExit as e:

@@ -5,7 +5,7 @@ npm run dev &
 FRONTEND_PID=$!
 
 # Start celery (in the background)
-celery -A backend.worker worker --loglevel DEBUG --pool solo & 
+celery -A backend.worker worker --loglevel DEBUG --pool solo &
 CELERY_PID=$!
 
 # Start backend (in foreground)

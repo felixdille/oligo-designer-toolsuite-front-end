@@ -576,7 +576,9 @@ const RunDetail = () => {
                             </Vertical>
                             <Divider />
 
-                            <InvalidRegionWarning id={run._id}></InvalidRegionWarning>
+                            <InvalidRegionWarning
+                                id={run._id}
+                            ></InvalidRegionWarning>
 
                             <h2>File Downloads</h2>
                             {fileActions && (
