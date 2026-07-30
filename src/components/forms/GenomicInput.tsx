@@ -132,12 +132,14 @@ const ConfigurableGenomicInput = ({
                         return {
                             type: "form",
                             data: data as GenomicForm,
-                            editHandler: () =>
+                            editHandler: () => {
+                                removeAutoCompleteRegion(data as GenomicForm);
                                 handleGenomicFormEdit(
                                     data as GenomicForm,
                                     onChange,
                                     formData.indexOf(data)
-                                ),
+                                );
+                            },
                             removeHandler: () => {
                                 removeAutoCompleteRegion(data as GenomicForm);
                                 handleRemove(formData.indexOf(data));
