@@ -66,7 +66,7 @@ const TxtUploadInput = (props: FieldProps) => {
                     <ToolTip id={fieldPathId.$id} tip={schema.description} />
                 )}
             </Form.Label>
-            <InputGroup>
+            <InputGroup className="d-flex">
                 <InputGroup.Checkbox
                     checked={allGenesChecked}
                     onChange={handleCheckboxChange}

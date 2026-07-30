@@ -25,7 +25,7 @@ export const AutoCompleteListItem: React.FC<{
 }> = memo(({ option, index, setValue }) => {
     return (
         <ListGroup.Item
-            className="autocomplete-genes-list-group-item"
+            className="autocomplete-genes-list-group-item border-0"
             onClick={() => setValue(option)}
             key={index}
         >
@@ -64,7 +64,7 @@ export const AutoCompleteTxtInput: React.FC<AutoCompleteTxtInputProps> = ({
     };
 
     return (
-        <Form.Group className="autocomplete-genes-form-group">
+        <Form.Group className="autocomplete-genes-form-group flex-grow-1 flex-shrink-1">
             <Form.Control
                 disabled={allGenesChecked}
                 id={fieldPathId.$id}
@@ -73,9 +73,10 @@ export const AutoCompleteTxtInput: React.FC<AutoCompleteTxtInputProps> = ({
                 onChange={handleChange}
                 value={value}
                 autoComplete="off"
+                className="rounded-0"
             />
             {currentOptions && currentOptions.length > 0 && value !== "" && (
-                <ListGroup className="autocomplete-genes-list-group">
+                <ListGroup className="rounded-top-0 autocomplete-genes-list-group border-black">
                     {currentOptions.map((option, index) => (
                         <AutoCompleteListItem
                             option={option}
