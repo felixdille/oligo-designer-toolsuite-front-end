@@ -11,6 +11,7 @@ import { InputList } from "../fastaGenerateForm/InputList";
 import { ToolTip } from "../ui/Tooltip";
 import { FileEarmarkPlus } from "react-bootstrap-icons";
 import { spaceBeforeCapitalLetters } from "./utils";
+import { useAutoComplete } from "../../hooks/useAutocomplete";
 
 type ConfigurableGenomicInputProps = FieldProps & {
     formsAllowed: boolean;
@@ -48,6 +49,8 @@ const ConfigurableGenomicInput = ({
     const handleGenomicFormNew = () => {
         handleGenomicFormEdit(null, onChange, formData.length);
     };
+
+    const { removeAutoCompleteRegion } = useAutoComplete();
 
     const handleRemove = (idx: number) => {
         onChange(
@@ -135,8 +138,10 @@ const ConfigurableGenomicInput = ({
                                     onChange,
                                     formData.indexOf(data)
                                 ),
-                            removeHandler: () =>
-                                handleRemove(formData.indexOf(data)),
+                            removeHandler: () => {
+                                removeAutoCompleteRegion(data as GenomicForm);
+                                handleRemove(formData.indexOf(data));
+                            },
                         };
                     } else {
                         return {

@@ -2,7 +2,7 @@ import type { ErrorSchema, FieldPathId, FieldPathList } from "@rjsf/utils";
 import { Form, ListGroup } from "react-bootstrap";
 import "./AutoCompleteTxtInput.css";
 import { useAutoComplete } from "../../hooks/useAutocomplete";
-import { useState } from "react";
+import { memo, useState } from "react";
 
 interface AutoCompleteTxtInputProps {
     allGenesChecked: boolean;
@@ -16,6 +16,23 @@ interface AutoCompleteTxtInputProps {
     ) => void;
     onBlur: (id: string, value: any) => void;
 }
+
+//TODO:(BA) investigate if memo and this component is really necessary
+export const AutoCompleteListItem: React.FC<{
+    option: string;
+    index: number;
+    setValue: React.Dispatch<any>;
+}> = memo(({ option, index, setValue }) => {
+    return (
+        <ListGroup.Item
+            className="autocomplete-genes-list-group-item"
+            onClick={() => setValue(option)}
+            key={index}
+        >
+            {option}
+        </ListGroup.Item>
+    );
+});
 
 export const AutoCompleteTxtInput: React.FC<AutoCompleteTxtInputProps> = ({
     allGenesChecked,
@@ -41,7 +58,7 @@ export const AutoCompleteTxtInput: React.FC<AutoCompleteTxtInputProps> = ({
             s.startsWith(input)
         );
 
-        setCurrentOptions(matchingOptions);
+        setCurrentOptions(matchingOptions.slice(0, 20));
 
         onChange(emptyStringToUndefined(input), fieldPathId.path);
     };
@@ -60,13 +77,11 @@ export const AutoCompleteTxtInput: React.FC<AutoCompleteTxtInputProps> = ({
             {currentOptions && currentOptions.length > 0 && value !== "" && (
                 <ListGroup className="autocomplete-genes-list-group">
                     {currentOptions.map((option, index) => (
-                        <ListGroup.Item
-                            className="autocomplete-genes-list-group-item"
-                            onClick={() => setValue(option)}
-                            key={index}
-                        >
-                            {option}
-                        </ListGroup.Item>
+                        <AutoCompleteListItem
+                            option={option}
+                            setValue={setValue}
+                            index={index}
+                        />
                     ))}
                 </ListGroup>
             )}

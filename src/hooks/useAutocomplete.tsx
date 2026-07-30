@@ -1,14 +1,10 @@
 import { createContext, useContext } from "react";
-import type {
-    EnsemblGenomicForm,
-    NcbiGenomicForm,
-} from "../components/fastaGenerateForm/types";
+import type { GenomicForm } from "../components/fastaGenerateForm/types";
 
 interface AutocompleteContextType {
     autoCompleteOptions: string[];
-    addAutocompleteRegion: (
-        genomicRegionGeneratorForm: NcbiGenomicForm | EnsemblGenomicForm
-    ) => void;
+    addAutocompleteRegion: (genomicRegionGeneratorForm: GenomicForm) => void;
+    removeAutoCompleteRegion: (genomicRegionGeneratorForm: GenomicForm) => void;
 }
 
 export const AutocompleteContext = createContext<AutocompleteContextType>(
