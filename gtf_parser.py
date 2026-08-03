@@ -1,12 +1,15 @@
 import abc
 import multiprocessing
+import os
 import pathlib
 import time
-from multiprocessing import Pool
+from math import ceil
 from multiprocessing.pool import ApplyResult
+from multiprocessing.shared_memory import SharedMemory
 from typing import Literal
 
 import pandas as pd
+from gtf_polars import parse_gtf
 from gtfreader import read_gtf
 from oligo_designer_toolsuite.utils import GffParser
 
@@ -25,15 +28,32 @@ class GeneExtractor(abc.ABC):
         pass
 
 
+class PolarsGtfGeneExtractor(GeneExtractor):
+    def get_genes(self, annotation_file: str) -> list[str]:
+        lf = parse_gtf(annotation_file, attributes_to_extract=["gene_id"])
+        gene_ids = lf.select(["gene_id"]).collect()["gene_id"]
+
+        return list(set(gene_ids))
+
+    def get_name(self) -> str:
+        return "Gtf Polars Gene Extractor"
+
+
 class OwnGeneExtractor(GeneExtractor):
     def __init__(self):
         self.gff_parser = GffParser()
         self.MEM_LIMIT = 1000000000
+        self.WORKERS = multiprocessing.cpu_count()
 
-        self.LINE_BUFFER_SIZE = int(self.MEM_LIMIT / multiprocessing.cpu_count())
+        self.LINE_BUFFER_SIZE = int(self.MEM_LIMIT / self.WORKERS)
 
-    def parse_gtf_lines(self, lines: list[str]):
+    def parse_gtf_lines(self, message_buffer: SharedMemory):
+        # print(message_buffer.buf)
+        text = self._get_message_from_message_buffer(message_buffer)
+
         genes = []
+
+        lines = text.splitlines()
 
         for line in lines:
             split_line = line.split("\t")
@@ -55,7 +75,35 @@ class OwnGeneExtractor(GeneExtractor):
                     genes.append(value)
                     break
 
-        return genes
+            message_buffer.close()
+
+        return list(genes)
+
+    def get_last_linebreak(self, text: str) -> tuple[str, str]:
+        last_linebreak = text.rfind("\n")
+        last_bit = ""
+
+        if last_linebreak < len(text) - 2:
+            last_bit = text[last_linebreak + 2 : len(text)]
+            text = text[: last_linebreak + 1]
+
+        return text, last_bit
+
+    def _prepare_message_buffers(self, annotation_file: str) -> list[SharedMemory]:
+        file_size = os.path.getsize(annotation_file)
+
+        num_buffers = ceil(file_size / self.LINE_BUFFER_SIZE)
+
+        return [SharedMemory(create=True, size=self.LINE_BUFFER_SIZE + 1) for i in range(num_buffers)]
+
+    def _fill_message_buffer(self, message: str, message_buffer: SharedMemory):
+        encoded = message.encode()
+        message_buffer.buf[: len(encoded)] = encoded
+        message_buffer.buf[len(encoded)] = 0
+
+    def _get_message_from_message_buffer(self, message_buffer: SharedMemory):
+        raw = bytes(message_buffer.buf)
+        return raw.split(b"\0", 1)[0].decode()
 
     def _get_genes_multi(self, annotation_file: str) -> list[str]:
         with open(annotation_file) as f:
@@ -65,21 +113,37 @@ class OwnGeneExtractor(GeneExtractor):
 
             results: list[ApplyResult] = []
 
-            with Pool(processes=multiprocessing.cpu_count()) as p:
+            sh_texts = self._prepare_message_buffers(annotation_file)
+
+            with multiprocessing.Pool(processes=self.WORKERS) as p:
                 tasks = []
+                last_bit = ""
+
+                index = 0
                 while True:
-                    lines = f.readlines(self.LINE_BUFFER_SIZE)
-                    if not line or len(lines) == 0:
+                    text = f.read(self.LINE_BUFFER_SIZE - len(last_bit))
+                    text = last_bit + text
+                    text, last_bit_found = self.get_last_linebreak(text)
+                    last_bit = last_bit_found
+
+                    if not line or len(text) == 0:
                         break
 
-                    tasks.append(p.apply_async(self.parse_gtf_lines, [lines]))
+                    self._fill_message_buffer(text, sh_texts[index])
+
+                    tasks.append(p.apply_async(self.parse_gtf_lines, [sh_texts[index]]))
+
+                    index += 1
 
                 results = [task.get() for task in tasks]
 
-        genes: list[str] = []
-
+        genes = []
         for result in results:
             genes.extend(result)
+
+        for sh_text in sh_texts:
+            sh_text.close()
+            sh_text.unlink()
 
         return genes
 
@@ -159,9 +223,9 @@ def benchmark():
     RUNS = 5
 
     annotation_file_paths: list[str] = [
-        # "/home/felixd/Schreibtisch/odt-cloud/frontend-ba/backend/cache/ncbi/1ea60503ae9cef3329d5900ff17d5af7-GCF_046534395.1_ASM4653439v1_genomic.gtf",
-        # "/home/felixd/Schreibtisch/odt-cloud/frontend-ba/backend/cache/ncbi/2af7f736f8fc2a32bd1a49cfe35353ef-GCF_009428885.1_ASM942888v1_genomic.gtf",
-        "/home/felixd/Schreibtisch/odt-cloud/frontend-ba/backend/cache/ncbi/81295d4fc9c4f759773d70b1a408a6fd-GCF_000001405.40_GRCh38.p14_genomic.gtf"
+        "/home/felixd/Schreibtisch/odt-cloud/frontend-ba/backend/cache/ncbi/1ea60503ae9cef3329d5900ff17d5af7-GCF_046534395.1_ASM4653439v1_genomic.gtf",
+        "/home/felixd/Schreibtisch/odt-cloud/frontend-ba/backend/cache/ncbi/2af7f736f8fc2a32bd1a49cfe35353ef-GCF_009428885.1_ASM942888v1_genomic.gtf",
+        "/home/felixd/Schreibtisch/odt-cloud/frontend-ba/backend/cache/ncbi/81295d4fc9c4f759773d70b1a408a6fd-GCF_000001405.40_GRCh38.p14_genomic.gtf",
     ]
 
     gene_extractors: list[GeneExtractor] = [
@@ -189,7 +253,7 @@ def benchmark():
 
 def test():
     start = time.perf_counter()
-    path = "/home/felixd/Schreibtisch/odt-cloud/frontend-ba/backend/cache/ncbi/81295d4fc9c4f759773d70b1a408a6fd-GCF_000001405.40_GRCh38.p14_genomic.gtf"
+    path = "/home/felixd/Downloads/GCF_000001405.40_GRCh38.p14_genomic(1).gtf"
 
     # print("ODT")
     # extractor = ODTGeneExtractor()
