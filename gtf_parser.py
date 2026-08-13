@@ -9,6 +9,7 @@ from multiprocessing.shared_memory import SharedMemory
 from typing import Literal
 
 import pandas as pd
+from gene_extractor import extract_genes_detached
 from gtf_polars import parse_gtf
 from gtfreader import read_gtf
 from oligo_designer_toolsuite.utils import GffParser
@@ -37,6 +38,14 @@ class PolarsGtfGeneExtractor(GeneExtractor):
 
     def get_name(self) -> str:
         return "Gtf Polars Gene Extractor"
+
+
+class OwnRustGeneExtractor(GeneExtractor):
+    def get_genes(self, annotation_file: str) -> list[str]:
+        return extract_genes_detached(annotation_file)
+
+    def get_name(self) -> str:
+        return "Own Rust Parser"
 
 
 class OwnGeneExtractor(GeneExtractor):
@@ -253,14 +262,14 @@ def benchmark():
 
 def test():
     start = time.perf_counter()
-    path = "/home/felixd/Downloads/GCF_000001405.40_GRCh38.p14_genomic(1).gtf"
+    path = "/home/felixd/Downloads/GCF_000001405.40_GRCh38.p14_genomic.gtf"
 
     # print("ODT")
     # extractor = ODTGeneExtractor()
     # extractor.get_genes(path)
 
     print("mine")
-    extractor = OwnGeneExtractor()
+    extractor = PolarsGtfGeneExtractor()
     genes = extractor.get_genes(path)
     print(len(set(genes)))
     print(f"Time: {time.perf_counter() - start}")
