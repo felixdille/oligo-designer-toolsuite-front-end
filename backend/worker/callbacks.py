@@ -5,11 +5,86 @@ from celery.exceptions import ChordError, TaskRevokedError
 from celery.worker.request import Request
 
 from backend.database import mongo_database
-from backend.exceptions import ODTCloudError, ODTEmptyResultError
+from backend.exceptions import ODTCloudError, ODTEmptyResultError, ODTValidationError
 from backend.queue_accounting import _remove_pending_run, queue_accounting_lock
 from backend.types import RunStatus
 from backend.worker.celery import app, logger
 from backend.worker.database import _parse_run_id, _update_run
+
+
+@app.task()
+def validation_success_callback(request: Request) -> None:
+    """Error handling callback (errback) for pipeline chords.
+
+    Arguments:
+        request {Request} -- The execution request received by the worker with task metadata.
+        exc {BaseException} -- The exception raised during task execution (wrapped in ChordError if raised in chord header).
+        trace {str | None} -- The exception traceback as a str if present.
+    """
+
+    logger.debug("Validation of a pipeline configuration failed")
+
+    run_id = request.stamps["pipeline_run_id"]
+
+    run_id = _parse_run_id(run_id)
+    if run_id is None:
+        logger.error(f"Validation errback received invalid run id: {request.id}")
+        return
+
+    with mongo_database() as db:
+        with queue_accounting_lock():
+            run = db.runs.find_one({"_id": run_id, "status": RunStatus.VALIDATING})
+            if run is not None:
+                _update_run(run_id, {"status": RunStatus.PENDING})
+                return
+            else:
+                raise RuntimeError("No run found despite validating it")
+
+
+@app.task()
+def validation_errback(request: Request, exc: BaseException, trace: str | None) -> None:
+    """Error handling callback (errback) for pipeline chords.
+
+    Arguments:
+        request {Request} -- The execution request received by the worker with task metadata.
+        exc {BaseException} -- The exception raised during task execution (wrapped in ChordError if raised in chord header).
+        trace {str | None} -- The exception traceback as a str if present.
+    """
+
+    logger.debug("Validation of a pipeline configuration failed")
+
+    run_id = request.stamps["pipeline_run_id"]
+
+    run_id = _parse_run_id(run_id)
+    if run_id is None:
+        logger.error(f"Validation errback received invalid run id: {request.id}")
+        return
+
+    status = RunStatus.FAILURE
+    error_message: str
+
+    match exc:
+        case TaskRevokedError():
+            # Run was intentionally cancelled and already deleted from the DB — nothing to update.
+            logger.info("Pipeline run was revoked, skipping status update.")
+            return
+        case ODTValidationError():
+            status = RunStatus.VALIDATION_FAILED  # override run status
+            error_message = str(exc)
+        case _:
+            error_message = "An unexpected error occured."
+
+    with mongo_database() as db:
+        with queue_accounting_lock() as redis:
+            run = db.runs.find_one({"_id": run_id, "status": RunStatus.VALIDATING})
+            if run is not None:
+                # The run never left the queue, because the validation happens before the run is enqueued
+                _update_run(run_id, {"status": status, "error_message": error_message})
+                _remove_pending_run(redis, db, run)
+                return
+            else:
+                # This should never happen, but if it does, something went very very wrong
+                logger.error("Pipeline not in validating state was validated")
 
 
 @app.task()

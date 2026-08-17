@@ -20,7 +20,7 @@ export const AutocompleteProvider = ({
 }: {
     children: React.ReactNode;
 }) => {
-    const pollingInterval = 2000; // Poll every second
+    const pollingInterval = 500; // Poll twice a second
     const [autoCompleteOptions, setAutocompleteOptions] = useState<
         Map<string, AutoCompleteOption>
     >(new Map<string, AutoCompleteOption>());

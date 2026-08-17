@@ -9,12 +9,11 @@ from pathlib import Path
 from typing import Any
 
 from bson import ObjectId
-from celery import chord
+from celery import chain, chord
 from celery.result import AsyncResult
 from flask import Blueprint, abort, current_app, jsonify, request
 from flask_login import current_user
 from glom import assign, glom
-from pydantic import ValidationError
 from werkzeug.datastructures import FileStorage, ImmutableMultiDict
 from werkzeug.utils import secure_filename
 
@@ -39,8 +38,7 @@ from backend.utilities.typed_values import (
     serialize_path,
 )
 from backend.utilities.validation import validate_genomic_form_data
-from backend.utils import utc_now
-from backend.worker.models import OligoSeqProbeDesignerConfig
+from backend.utils import get_gene_ids, utc_now
 from backend.worker.task_index import Callbacks, Tasks
 
 # Blueprint for Merfish endpoints
@@ -138,7 +136,7 @@ def init_run() -> ObjectId:
     Returns:
         ObjectId -- The pipeline run's id
     """
-    insert_result = db.runs.insert_one({"status": RunStatus.PENDING})
+    insert_result = db.runs.insert_one({"status": RunStatus.VALIDATING})
     if not insert_result.acknowledged:
         abort(HTTPStatus.INTERNAL_SERVER_ERROR, description="Failed to create run in database")
     return insert_result.inserted_id
@@ -171,7 +169,7 @@ def update_run_with_context(
 
 
 def check_gene_threshold(form_data: dict[str, Any]):
-    genes_string = glom(form_data, "target_probe.oligo_generation.file_region_ids")
+    genes_string = get_gene_ids(form_data)
     if genes_string is None:
         abort(HTTPStatus.BAD_REQUEST, description="Please login to analyse all genes. No gene list provided.")
     genes = genes_string.split(",")
@@ -209,7 +207,7 @@ def prepare_pipeline_chord(
 
     # the chord header tasks get executed simultaneously as a group
     region_generation_signatures = (
-        celery_app.signature(Tasks.RUN_GENOMIC_REGION_GENERATOR, args=(form, id))
+        celery_app.signature(Tasks.RUN_GENOMIC_REGION_GENERATOR, args=(form, id), immutable=True)
         for id, forms in generated_regions.items()
         for form in forms
     )
@@ -231,10 +229,21 @@ def prepare_pipeline_chord(
 
     error_handler = celery_app.signature(Callbacks.PIPELINE_CHORD_ERRBACK)
 
-    pipeline_chord = chord(region_generation_signatures, pipeline_signature.on_error(error_handler))
+    validate_pipeline_config_task = celery_app.signature(
+        Tasks.VALIDATE_PIPELINE_CONFIG, args=(form_data, pipeline_name)
+    )
+
+    validation_errback = celery_app.signature(Callbacks.VALIDATION_ERRBACK)
+    validation_success_callback = celery_app.signature(Callbacks.VALIDATION_SUCCESS_CALLBACK)
+
+    pipeline_chain = chain(
+        validate_pipeline_config_task.link(validation_success_callback).on_error(validation_errback),
+        chord(region_generation_signatures, pipeline_signature.on_error(error_handler)),
+    )
+
     # Give every header and callback task a shared workflow identifier for whole-chord revocation.
-    pipeline_chord.stamp(**{Config.CELERY_PIPELINE_RUN_STAMP: str(run_id)})
-    return pipeline_chord
+    pipeline_chain.stamp(**{Config.CELERY_PIPELINE_RUN_STAMP: str(run_id)})
+    return pipeline_chain
 
 
 def enqueue_pipeline(pipeline_chord: Any) -> AsyncResult:
@@ -284,21 +293,6 @@ def save_files(form_data: dict[str, Any], pipeline_name: str, files: ImmutableMu
                     file_inputs[path] = []
                 file_inputs[path].append(file_path)
     return file_inputs
-
-
-def validate_pipeline_config(form_data: dict[str, Any], pipeline_name: str):
-
-    match pipeline_name:
-        case "oligoseq":
-            pipeline_model = OligoSeqProbeDesignerConfig
-        case _:
-            abort(HTTPStatus.BAD_REQUEST, description="unknown pipeline")
-
-    try:
-        pipeline_model.model_validate(form_data)
-    except ValidationError as v_err:
-        current_app.logger.debug(v_err)
-        abort(HTTPStatus.BAD_REQUEST, description=f"Invalid input: {v_err!s}")
 
 
 def add_non_exposed_fields(form_data: dict[str, Any], pipline_name: str):
@@ -408,8 +402,6 @@ def start_pipeline(pipeline_name: str):
         abort(HTTPStatus.BAD_REQUEST, description="Invalid input: formdata must be an object")
 
     add_non_exposed_fields(form_data, pipeline_name)
-
-    validate_pipeline_config(form_data, pipeline_name)
 
     # genomic_region_generator
     generated_regions = parse_region_generation(form_data, pipeline_name)

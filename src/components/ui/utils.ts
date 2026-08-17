@@ -1,5 +1,13 @@
-import { Ban, Check2, ClockHistory, XLg } from "react-bootstrap-icons";
+import {
+    Ban,
+    Check2,
+    ClockHistory,
+    XLg,
+    type Icon,
+} from "react-bootstrap-icons";
 import Pulse from "./Pulse";
+import type { RunState } from "../../types";
+import type { JSX } from "react";
 
 export const visualizationDisplayNames = {
     alignment: "Genomic Regions",
@@ -8,7 +16,13 @@ export const visualizationDisplayNames = {
 
 export type VisualizationType = keyof typeof visualizationDisplayNames;
 
-export const runStatusDisplay = {
+interface RunStateDisplay {
+    title: string;
+    variant: string;
+    icon: Icon | typeof Pulse | typeof Pulse.Paused;
+}
+
+export const runStatusDisplay: Record<RunState, RunStateDisplay> = {
     success: {
         title: "Success",
         variant: "secondary",
@@ -38,6 +52,16 @@ export const runStatusDisplay = {
         title: "Pending",
         variant: "secondary",
         icon: Pulse.Paused,
+    },
+    validating: {
+        title: "Validating",
+        variant: "secondary",
+        icon: Pulse,
+    },
+    validation_failed: {
+        title: "Validation Failed",
+        variant: "danger",
+        icon: XLg,
     },
 };
 

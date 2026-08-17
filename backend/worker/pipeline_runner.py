@@ -13,6 +13,7 @@ from pydantic import ValidationError
 
 from backend.constants import PIPELINE_FILE_INPUT, PIPELINE_MODELS
 from backend.exceptions import ODTEmptyResultError, ODTNoValidRegionIdsError, ODTPipelineError
+from backend.utils import get_gene_ids
 from backend.worker.genomic_regions_file import GenomicRegionsFile
 from backend.worker.utils import build_fallback_error_message
 
@@ -87,7 +88,7 @@ class PipelineRunner:
             form_data {dict} -- The pipeline configuration.
         """
         oligo_generation_form = glom(form_data, "target_probe.oligo_generation")
-        file_region_ids = oligo_generation_form["file_region_ids"]
+        file_region_ids = get_gene_ids(form_data)
         if file_region_ids is not None:
             with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as temp_file:
                 file_path = temp_file.name

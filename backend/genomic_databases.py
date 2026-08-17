@@ -957,7 +957,7 @@ def fetch_dropdown_options() -> dict[str, dict[str, list[str]]]:
         dict[str, dict[str, list[str]]] -- dict mapping database names to dicts mapping dropdown options to their suboptions.
     """
 
-    # TODO: update allowlists
+    # TODO: update allowlists // set(FtpLoaderNCBI.SUPPORTED_TAXA_SOURCES.keys())
 
     databases = [
         NCBIGenomicDatabase(

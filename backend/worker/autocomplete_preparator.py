@@ -6,7 +6,7 @@ from backend.cache import generic_cache_region
 
 
 @generic_cache_region.cache_on_arguments()
-def build_autocomplete_options(annotation_file: Path):
+def build_autocomplete_options(annotation_file: Path) -> list[str]:
     parser = GffParser()
 
     annotation = parser.parse_annotation_from_gff(str(annotation_file))

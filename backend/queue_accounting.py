@@ -47,7 +47,7 @@ def add_pending_run(redis: Redis, db: Any, priority: int) -> tuple[int, int]:
 
     if priority == CeleryConfig.task_high_priority:
         db.runs.update_many(
-            {"status": RunStatus.PENDING, "priority": "default"},
+            {"status": {"$in": [RunStatus.PENDING, RunStatus.VALIDATING]}, "priority": "default"},
             {"$inc": {"queue_position.0": 1}},
         )
         redis.hincrby(Config.REDIS_QUEUE_LENGTH_KEY, "high", 1)

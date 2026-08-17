@@ -13,7 +13,10 @@ class Tasks:
     TRIGGER_DROPDOWN_OPTIONS_FETCHING = TASK_ROOT + ".trigger_dropdown_options_fetching"
     GENERATE_MONTHLY_REPORT = TASK_ROOT + ".generate_monthly_report"
     GENERATE_AUTOCOMPLETE_OPTIONS = TASK_ROOT + ".generate_autocomplete_options"
+    VALIDATE_PIPELINE_CONFIG = TASK_ROOT + ".validate_pipeline_config"
 
 
 class Callbacks:
     PIPELINE_CHORD_ERRBACK = CALLBACK_ROOT + ".pipeline_chord_errback"
+    VALIDATION_ERRBACK = CALLBACK_ROOT + ".validation_errback"
+    VALIDATION_SUCCESS_CALLBACK = CALLBACK_ROOT + ".validation_success_callback"

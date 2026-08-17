@@ -22,6 +22,12 @@ class ODTNoValidRegionIdsError(ODTCloudError):
     """
 
 
+class ODTValidationError(ODTCloudError):
+    """
+    Raised when the validation of a pipeline configuration fails.
+    """
+
+
 class ODTEmptyResultError(ODTCloudError):
     """
     Raised when the Oligo Designer Toolsuite pipeline execution results in an empty output.

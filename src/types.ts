@@ -193,7 +193,9 @@ export type RunState =
     | "failure"
     | "pending"
     | "timeout"
-    | "empty_result";
+    | "empty_result"
+    | "validating"
+    | "validation_failed";
 
 export interface RunMetrics {
     started_at?: string;

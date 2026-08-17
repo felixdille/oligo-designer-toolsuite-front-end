@@ -5,25 +5,31 @@ import datetime
 import os
 import shutil
 from collections.abc import Callable
+from dataclasses import asdict
 from logging import Logger
 from pathlib import Path
 from typing import Any
 
 from bson import ObjectId
 from celery.utils.log import get_task_logger
+from glom import glom
+from pydantic import ValidationError
 
 from backend.config import CeleryConfig, Config
+from backend.constants import PIPELINE_GENOMIC_INPUT
 from backend.database import mongo_database
+from backend.exceptions import ODTValidationError
 from backend.genomic_databases import (
     GenomicEntity,
     fetch_dropdown_options,
     get_genomic_database_by_region_form,
 )
-from backend.utils import utc_now
+from backend.utils import get_gene_ids, utc_now
 from backend.worker.autocomplete_preparator import build_autocomplete_options
 from backend.worker.celery import app
 from backend.worker.genomic_region_generator_runner import GenomicRegionGeneratorRunner
 from backend.worker.handlers import PipelineTask
+from backend.worker.models import OligoSeqProbeDesignerConfig
 
 logger: Logger = get_task_logger(__name__)
 logger.setLevel(os.environ.get("LOG_LEVEL", "INFO"))
@@ -570,7 +576,9 @@ def cleanup_anonymous_data() -> dict[str, int]:
 
 
 @app.task()
-def generate_autocomplete_options(region_form: dict[str, Any], genomic_entity_dict: dict[str, Any]):
+def generate_autocomplete_options(
+    region_form: dict[str, Any], genomic_entity_dict: dict[str, Any]
+) -> list[str]:
 
     genomic_entity = GenomicEntity(**genomic_entity_dict)
 
@@ -579,3 +587,51 @@ def generate_autocomplete_options(region_form: dict[str, Any], genomic_entity_di
     annotation_file = str(genomic_database.fetch_annotation_file(genomic_entity))
 
     return build_autocomplete_options(annotation_file)
+
+
+def validate_gene_id_list(form_data: dict[str, Any], pipeline_name: str):
+    gene_ids = get_gene_ids(form_data)
+
+    # TODO:(BA) better way of getting the relevant field
+    relevant_genomic_input_path = PIPELINE_GENOMIC_INPUT.get(pipeline_name, [])[0]
+
+    valid_gene_ids = set()
+    genomic_region_forms = glom(form_data, relevant_genomic_input_path)
+
+    for region_form in genomic_region_forms:
+        genomic_entity = GenomicEntity.from_region_form(region_form)
+
+        region_form_gene_ids = generate_autocomplete_options(region_form, asdict(genomic_entity))
+
+        valid_gene_ids.update(region_form_gene_ids)
+
+    gene_ids = [gene.strip() for gene in gene_ids.split(",")]
+
+    invalid_gene_ids = []
+
+    for gene_id in gene_ids:
+        if gene_id not in valid_gene_ids:
+            invalid_gene_ids.append(gene_id)
+
+    if invalid_gene_ids:
+        raise ODTValidationError(
+            f"The following Gene Ids could not be found in the input data: {'\n'.join(invalid_gene_ids)}"
+        )
+
+
+@app.task()
+def validate_pipeline_config(form_data: dict[str, Any], pipeline_name: str):
+
+    match pipeline_name:
+        case "oligoseq":
+            pipeline_model = OligoSeqProbeDesignerConfig
+        case _:
+            raise ODTValidationError("unknown pipeline")
+
+    try:
+        pipeline_model.model_validate(form_data)
+    except ValidationError as v_err:
+        logger.debug(v_err)
+        raise ODTValidationError(f"Invalid input: {v_err!s}")
+
+    validate_gene_id_list(form_data, pipeline_name)

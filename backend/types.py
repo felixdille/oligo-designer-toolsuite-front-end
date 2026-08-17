@@ -16,3 +16,5 @@ class RunStatus(StrEnum):
     PENDING = auto()
     TIMEOUT = auto()
     EMPTY_RESULT = auto()
+    VALIDATING = auto()
+    VALIDATION_FAILED = auto()

@@ -139,7 +139,7 @@ class TargetProbeOligoGeneration(TargetProbeOligoGenerationBase):
     file_region_ids: Annotated[
         str | None,
         Field(
-            description="Comma separated list of genes used to generate the probe sequences. You can also upload a .txt file with one gene per line instead.",
+            description="Comma separated list of genes used to generate the probe sequences. You can also upload a .txt file with one gene per line instead. HINT: After selecting Genomic Regions, there are gene suggestions shown, helping selecting the right genes.",
         ),
     ]  # undefined by default, has to be set by user
     files_fasta_probe_database: GenomicInput = Field(min_length=1)  # type: ignore
