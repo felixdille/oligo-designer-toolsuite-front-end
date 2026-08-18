@@ -43,6 +43,7 @@ dev = [
     { include-group = "test" },
     { include-group = "lint" },
     { include-group = "types" },
+    "debugpy"
 ]
 
 [tool.pytest]
