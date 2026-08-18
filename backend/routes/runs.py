@@ -26,6 +26,7 @@ from backend.extensions import db
 from backend.routes.route_helpers import (
     get_run_or_404,
 )
+from backend.types import RunStatus
 from backend.utilities.pipeline import delete_pipeline_run_files_and_db
 from backend.utilities.typed_values import (
     deserialize_path,
@@ -69,7 +70,12 @@ def format_run(run: dict[Any, Any]) -> dict[str, Any]:
     if metrics := format_run_metrics(run.get("metrics")):
         formatted["metrics"] = metrics
 
-    if run.get("status") in ["failure", "timeout", "empty_result"] and run.get("error_message"):
+    if run.get("status") in [
+        RunStatus.FAILURE,
+        RunStatus.TIMEOUT,
+        RunStatus.EMPTY_RESULT,
+        RunStatus.VALIDATION_FAILED,
+    ] and run.get("error_message"):
         formatted["error_message"] = run.get("error_message")
     return formatted
 

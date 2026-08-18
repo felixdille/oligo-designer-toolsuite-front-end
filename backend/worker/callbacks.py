@@ -13,35 +13,6 @@ from backend.worker.database import _parse_run_id, _update_run
 
 
 @app.task()
-def validation_success_callback(request: Request) -> None:
-    """Error handling callback (errback) for pipeline chords.
-
-    Arguments:
-        request {Request} -- The execution request received by the worker with task metadata.
-        exc {BaseException} -- The exception raised during task execution (wrapped in ChordError if raised in chord header).
-        trace {str | None} -- The exception traceback as a str if present.
-    """
-
-    logger.debug("Validation of a pipeline configuration failed")
-
-    run_id = request.stamps["pipeline_run_id"]
-
-    run_id = _parse_run_id(run_id)
-    if run_id is None:
-        logger.error(f"Validation errback received invalid run id: {request.id}")
-        return
-
-    with mongo_database() as db:
-        with queue_accounting_lock():
-            run = db.runs.find_one({"_id": run_id, "status": RunStatus.VALIDATING})
-            if run is not None:
-                _update_run(run_id, {"status": RunStatus.PENDING})
-                return
-            else:
-                raise RuntimeError("No run found despite validating it")
-
-
-@app.task()
 def validation_errback(request: Request, exc: BaseException, trace: str | None) -> None:
     """Error handling callback (errback) for pipeline chords.
 
@@ -78,7 +49,7 @@ def validation_errback(request: Request, exc: BaseException, trace: str | None) 
         with queue_accounting_lock() as redis:
             run = db.runs.find_one({"_id": run_id, "status": RunStatus.VALIDATING})
             if run is not None:
-                # The run never left the queue, because the validation happens before the run is enqueued
+                # The run never left the queue, because the validation happens before the the pipeline chord can run
                 _update_run(run_id, {"status": status, "error_message": error_message})
                 _remove_pending_run(redis, db, run)
                 return

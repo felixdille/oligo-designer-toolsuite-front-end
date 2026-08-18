@@ -14,6 +14,22 @@ from backend.worker.celery import logger
 from backend.worker.database import _update_run_by_task_id, start_pending_run
 
 
+class ValidationTask(Task):
+    def on_success(self, retval: Any, task_id: str, args: tuple[Any, ...], kwargs: dict[str, Any]) -> None:
+        """Handler that gets called if the validation task completes successfully.
+
+        Arguments:
+            retval {Any} -- The return value of the task.
+            task_id {str} -- The unique ID of the task.
+            args {tuple} -- Original arguments for the executed task.
+            kwargs {Dict} -- Original keyword arguments for the executed task.
+        """
+
+        logger.info(f"Validation of pipeline configuration succeeded {task_id=}")
+        _update_run_by_task_id(task_id, {"status": RunStatus.PENDING})
+        super().on_success(retval, task_id, args, kwargs)
+
+
 class PipelineTask(Task):
     """Custom Task subclass that keeps the database up-to-date with the task state."""
 

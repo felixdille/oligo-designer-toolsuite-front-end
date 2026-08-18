@@ -234,10 +234,9 @@ def prepare_pipeline_chord(
     )
 
     validation_errback = celery_app.signature(Callbacks.VALIDATION_ERRBACK)
-    validation_success_callback = celery_app.signature(Callbacks.VALIDATION_SUCCESS_CALLBACK)
 
     pipeline_chain = chain(
-        validate_pipeline_config_task.link(validation_success_callback).on_error(validation_errback),
+        validate_pipeline_config_task.on_error(validation_errback),
         chord(region_generation_signatures, pipeline_signature.on_error(error_handler)),
     )
 

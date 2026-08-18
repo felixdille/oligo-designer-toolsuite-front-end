@@ -19,4 +19,3 @@ class Tasks:
 class Callbacks:
     PIPELINE_CHORD_ERRBACK = CALLBACK_ROOT + ".pipeline_chord_errback"
     VALIDATION_ERRBACK = CALLBACK_ROOT + ".validation_errback"
-    VALIDATION_SUCCESS_CALLBACK = CALLBACK_ROOT + ".validation_success_callback"

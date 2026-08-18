@@ -28,7 +28,7 @@ from backend.utils import get_gene_ids, utc_now
 from backend.worker.autocomplete_preparator import build_autocomplete_options
 from backend.worker.celery import app
 from backend.worker.genomic_region_generator_runner import GenomicRegionGeneratorRunner
-from backend.worker.handlers import PipelineTask
+from backend.worker.handlers import PipelineTask, ValidationTask
 from backend.worker.models import OligoSeqProbeDesignerConfig
 
 logger: Logger = get_task_logger(__name__)
@@ -619,7 +619,7 @@ def validate_gene_id_list(form_data: dict[str, Any], pipeline_name: str):
         )
 
 
-@app.task()
+@app.task(base=ValidationTask)
 def validate_pipeline_config(form_data: dict[str, Any], pipeline_name: str):
 
     match pipeline_name:
