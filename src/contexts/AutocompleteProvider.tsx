@@ -3,6 +3,7 @@ import { AutocompleteContext } from "../hooks/useAutocomplete";
 import type { GenomicForm } from "../components/fastaGenerateForm/types";
 import axios from "axios";
 import { BACKEND_URL } from "../config";
+import { Trie } from "data-structure-typed";
 
 // TODO:(BA) investigate useEffect being run too often
 
@@ -205,13 +206,13 @@ export const AutocompleteProvider = ({
         .filter((val) => val.active && val.suggestions !== null)
         .map((val) => val.suggestions!);
 
+    const autoCompletOptions = Array<string>().concat(...validSuggestions);
+
     return (
         <AutocompleteContext.Provider
             value={{
                 addAutocompleteRegion,
-                autoCompleteOptions: Array<string>().concat(
-                    ...validSuggestions
-                ),
+                autoCompleteOptions: new Trie(autoCompletOptions),
                 removeAutoCompleteRegion,
             }}
         >

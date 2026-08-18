@@ -54,11 +54,8 @@ export const AutoCompleteTxtInput: React.FC<AutoCompleteTxtInputProps> = ({
 
         setValue(input);
 
-        const matchingOptions = autoCompleteOptions.filter((s) =>
-            s.startsWith(input)
-        );
-
-        setCurrentOptions(matchingOptions.slice(0, 20));
+        const matchingOptions = autoCompleteOptions.getWords(input, 20);
+        setCurrentOptions(matchingOptions);
 
         onChange(emptyStringToUndefined(input), fieldPathId.path);
     };

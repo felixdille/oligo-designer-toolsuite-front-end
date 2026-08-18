@@ -15,6 +15,7 @@
     "axios": "^1.13.2",
     "bootstrap": "^5.3.8",
     "d3": "^7.9.0",
+    "data-structure-typed": "^2.6.4",
     "dotenv": "^17.4.2",
     "js-yaml": "^4.1.0",
     "react": "^19.2.0",
