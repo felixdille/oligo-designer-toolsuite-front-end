@@ -12,6 +12,7 @@ import { ToolTip } from "../ui/Tooltip";
 import { FileEarmarkPlus } from "react-bootstrap-icons";
 import { spaceBeforeCapitalLetters } from "./utils";
 import { useAutoComplete } from "../../hooks/useAutocomplete";
+import { useEffect } from "react";
 
 type ConfigurableGenomicInputProps = FieldProps & {
     formsAllowed: boolean;
@@ -50,7 +51,7 @@ const ConfigurableGenomicInput = ({
         handleGenomicFormEdit(null, onChange, formData.length);
     };
 
-    const { removeAutoCompleteRegion } = useAutoComplete();
+    const { setAutoCompleteRegions } = useAutoComplete();
 
     const handleRemove = (idx: number) => {
         onChange(
@@ -100,6 +101,14 @@ const ConfigurableGenomicInput = ({
         onBlur(id, formData);
     };
 
+    useEffect(() => {
+        const genomicRegions = (formData as GenomicFormOrFile[])
+            .filter((data) => Object.hasOwn(data, "source"))
+            .map((data) => data as GenomicForm);
+
+        setAutoCompleteRegions(genomicRegions);
+    }, [formData]);
+
     return (
         <Vertical gap="sm" className="mb-2">
             <span>
@@ -133,7 +142,6 @@ const ConfigurableGenomicInput = ({
                             type: "form",
                             data: data as GenomicForm,
                             editHandler: () => {
-                                removeAutoCompleteRegion(data as GenomicForm);
                                 handleGenomicFormEdit(
                                     data as GenomicForm,
                                     onChange,
@@ -141,7 +149,6 @@ const ConfigurableGenomicInput = ({
                                 );
                             },
                             removeHandler: () => {
-                                removeAutoCompleteRegion(data as GenomicForm);
                                 handleRemove(formData.indexOf(data));
                             },
                         };

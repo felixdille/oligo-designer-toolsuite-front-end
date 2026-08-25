@@ -24,6 +24,7 @@ interface BasePipeline {
     img: string;
     detailedLink: string;
     link: string;
+    oligo_generation_field: string;
     fileUploadFields?: (keyof RJSFFormData)[][];
     disabled: boolean;
     fileDownloads?: {
@@ -73,6 +74,7 @@ export const PIPELINE_CONFIG: PipelineConfig = {
         img: scrinshotImage,
         disabled: true,
         link: "/pipelines/scrinshot",
+        oligo_generation_field: "",
     },
     merfish: {
         name: "merfish",
@@ -86,6 +88,7 @@ export const PIPELINE_CONFIG: PipelineConfig = {
         img: merfishImage,
         disabled: true,
         link: "/pipelines/merfish",
+        oligo_generation_field: "",
     },
     seqfish: {
         name: "seqfish",
@@ -99,6 +102,7 @@ export const PIPELINE_CONFIG: PipelineConfig = {
         img: seqfishImage,
         disabled: true,
         link: "/pipelines/seqfish",
+        oligo_generation_field: "",
     },
     oligoseq: {
         name: "oligoseq",
@@ -126,5 +130,7 @@ export const PIPELINE_CONFIG: PipelineConfig = {
             probesTable: "oligo_seq_probes.tsv",
             probesOrder: "oligo_seq_probes_order.yml",
         },
+        oligo_generation_field:
+            "target_probe.oligo_generation.files_fasta_probe_database",
     },
 };

@@ -1,3 +1,5 @@
+import type { NestedObject } from "../componentTypes";
+
 export const isRootField = (fieldPathId: { $id: string }): boolean =>
     fieldPathId.$id === "root";
 
@@ -30,3 +32,12 @@ export const filterUninformativeErrors = (error: string) =>
         "must match a schema in anyOf",
         "must be equal to constant",
     ].includes(error);
+
+export const deepGet = <T>(obj: NestedObject, path: string) => {
+    return path
+        .split(".")
+        .reduce(
+            (prev: NestedObject, curr: string) => prev[curr] as NestedObject,
+            obj
+        ) as T;
+};

@@ -47,26 +47,31 @@ def genomic_get_releases(taxon: str, species: str):
 
 @genomic_bp.route("/api/genomic/autocomplete-region", methods=["POST"])
 def genomic_build_autocomplete_for_region():
-    region_form = request.get_json()
+    region_forms = request.get_json()
 
-    try:
-        GenomicRegionGeneratorAdapter.validate_python(region_form)
-    except ValidationError:
-        abort(
-            HTTPStatus.BAD_REQUEST,
-            "Could not validate the Genomic Region Generator Form",
+    task_ids = []
+
+    for region_form in region_forms:
+        try:
+            GenomicRegionGeneratorAdapter.validate_python(region_form)
+        except ValidationError:
+            abort(
+                HTTPStatus.BAD_REQUEST,
+                "Could not validate the Genomic Region Generator Form",
+            )
+
+        try:
+            genomic_entity = GenomicEntity.from_region_form(region_form)
+        except ValueError:
+            abort(HTTPStatus.BAD_REQUEST, "Could not parse Genomic Region Generator Form")
+
+        result = celery_app.send_task(
+            Tasks.GENERATE_AUTOCOMPLETE_OPTIONS, args=(region_form, asdict(genomic_entity))
         )
 
-    try:
-        genomic_entity = GenomicEntity.from_region_form(region_form)
-    except ValueError:
-        abort(HTTPStatus.BAD_REQUEST, "Could not parse Genomic Region Generator Form")
+        task_ids.append(result.id)
 
-    result = celery_app.send_task(
-        Tasks.GENERATE_AUTOCOMPLETE_OPTIONS, args=(region_form, asdict(genomic_entity))
-    )
-
-    return jsonify(result.id), 200
+    return jsonify(task_ids), 200
 
 
 @genomic_bp.route("/api/genomic/autocomplete-options", methods=["POST"])

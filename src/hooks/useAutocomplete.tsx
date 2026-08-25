@@ -4,8 +4,9 @@ import type { Trie } from "data-structure-typed";
 
 interface AutocompleteContextType {
     autoCompleteOptions: Trie;
-    addAutocompleteRegion: (genomicRegionGeneratorForm: GenomicForm) => void;
-    removeAutoCompleteRegion: (genomicRegionGeneratorForm: GenomicForm) => void;
+    setAutoCompleteRegions: (
+        genomicRegionGeneratorForms: GenomicForm[]
+    ) => void;
 }
 
 export const AutocompleteContext = createContext<AutocompleteContextType>(
