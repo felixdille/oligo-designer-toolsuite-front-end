@@ -16,19 +16,23 @@ interface AutoCompleteOption {
     active: boolean;
 }
 
+interface AutoCompleteOptionAnswer {
+    task_id: string;
+    autocomplete_options: string[];
+}
+
 export const AutocompleteProvider = ({
     children,
 }: {
     children: React.ReactNode;
 }) => {
-    const pollingInterval = 500; // Poll twice a second
-    const [autoCompleteOptions, setAutocompleteOptions] = useState<
-        Map<string, AutoCompleteOption>
-    >(new Map<string, AutoCompleteOption>());
-    const [regionFormMap, setRegionFormMap] = useState<
-        Map<string, AutoCompleteRegion>
-    >(new Map<string, AutoCompleteRegion>());
-    const pollingRef = useRef<NodeJS.Timeout | null>(null);
+    const [autoCompleteOptions, setAutocompleteOptions] = useState(
+        new Map<string, AutoCompleteOption>()
+    );
+    const [regionFormMap, setRegionFormMap] = useState(
+        new Map<string, AutoCompleteRegion>()
+    );
+    const eventSourceRef = useRef<EventSource | null>(null);
 
     const getGenomicRegionGeneratorFormId = (
         genomicRegionGeneratorForm: GenomicForm
@@ -37,50 +41,6 @@ export const AutocompleteProvider = ({
             source: genomicRegionGeneratorForm.source,
             source_params: genomicRegionGeneratorForm.source_params,
         });
-
-    const fetchAutocompleteRegions = useCallback(async () => {
-        const toFetchRegionFormIds = [...autoCompleteOptions.entries()]
-            .filter(([_, autoCompleteOption]) => autoCompleteOption.active)
-            .map(([taskId, _]) => taskId);
-
-        if (
-            toFetchRegionFormIds.length === 0 ||
-            toFetchRegionFormIds.every((taskId) => {
-                return autoCompleteOptions.get(taskId)?.suggestions !== null;
-            })
-        )
-            return;
-
-        // TODO:(BA) use query here later on
-        try {
-            const response = await axios.post(
-                BACKEND_URL + `/api/genomic/autocomplete-options`,
-                toFetchRegionFormIds,
-                {
-                    withCredentials: true,
-                }
-            );
-
-            const readyAutocompleteOptions: Record<string, string[]> =
-                response.data;
-
-            Object.entries(readyAutocompleteOptions).forEach(
-                ([taskId, suggestions]) => {
-                    setAutocompleteOptions(
-                        new Map(
-                            autoCompleteOptions.set(taskId, {
-                                suggestions: suggestions,
-                                active: autoCompleteOptions.get(taskId)!.active,
-                            })
-                        )
-                    );
-                }
-            );
-        } catch (error) {
-            console.error("Could not fetch required autocomplete parameters");
-            console.error(error);
-        }
-    }, [autoCompleteOptions, setAutocompleteOptions]);
 
     const updateAutoCompleteOptions = (taskIds: string[]) => {
         const activeTaskIdsSet = new Set(taskIds);
@@ -168,17 +128,59 @@ export const AutocompleteProvider = ({
     };
 
     useEffect(() => {
-        pollingRef.current = setInterval(
-            () => fetchAutocompleteRegions(),
-            pollingInterval
-        );
+        const SSE_STREAM_URL = BACKEND_URL + "/api/stream";
+
+        if (
+            !eventSourceRef.current ||
+            eventSourceRef.current.readyState != EventSource.OPEN
+        ) {
+            eventSourceRef.current = new EventSource(SSE_STREAM_URL, {
+                withCredentials: true,
+            });
+
+            eventSourceRef.current.onerror = () => {
+                console.error("Event Source encountered an error");
+            };
+        }
 
         return () => {
-            if (pollingRef.current) {
-                clearInterval(pollingRef.current);
+            if (eventSourceRef.current) {
+                eventSourceRef.current.close();
             }
         };
-    }, [fetchAutocompleteRegions]);
+    }, []);
+
+    useEffect(() => {
+        const eventSource = eventSourceRef.current;
+
+        if (!eventSource) {
+            console.error("Could not initialize event stream");
+            return;
+        }
+
+        const listener = (ev: MessageEvent<any>) => {
+            const autoCompleteAnswer: AutoCompleteOptionAnswer = JSON.parse(
+                ev["data"]
+            );
+
+            const taskId = autoCompleteAnswer.task_id;
+
+            setAutocompleteOptions(
+                new Map(
+                    autoCompleteOptions.set(taskId, {
+                        suggestions: autoCompleteAnswer.autocomplete_options,
+                        active: autoCompleteOptions.get(taskId)!.active,
+                    })
+                )
+            );
+        };
+
+        eventSource.addEventListener("autocomplete-options", listener);
+
+        return () => {
+            eventSource.removeEventListener("autocomplete-options", listener);
+        };
+    }, [autoCompleteOptions, setAutocompleteOptions]);
 
     const validSuggestions = [...autoCompleteOptions.values()]
         .filter((val) => val.active && val.suggestions !== null)

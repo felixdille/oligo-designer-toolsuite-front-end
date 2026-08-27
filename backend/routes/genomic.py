@@ -19,6 +19,8 @@ from backend.genomic_databases import (
     NCBIGenomicDatabase,
     fetch_dropdown_options,
 )
+from backend.routes.route_helpers import get_channel_id, get_user_context
+from backend.utils import get_channel_name
 from backend.worker.models import GenomicRegionGeneratorAdapter
 from backend.worker.task_index import Tasks
 
@@ -51,6 +53,10 @@ def genomic_build_autocomplete_for_region():
 
     task_ids = []
 
+    channel_id = get_channel_id(*get_user_context())
+
+    channel_name = get_channel_name(channel_id, "autocomplete-options")
+
     for region_form in region_forms:
         try:
             GenomicRegionGeneratorAdapter.validate_python(region_form)
@@ -66,7 +72,7 @@ def genomic_build_autocomplete_for_region():
             abort(HTTPStatus.BAD_REQUEST, "Could not parse Genomic Region Generator Form")
 
         result = celery_app.send_task(
-            Tasks.GENERATE_AUTOCOMPLETE_OPTIONS, args=(region_form, asdict(genomic_entity))
+            Tasks.GENERATE_AUTOCOMPLETE_OPTIONS, args=(region_form, asdict(genomic_entity), channel_name)
         )
 
         task_ids.append(result.id)

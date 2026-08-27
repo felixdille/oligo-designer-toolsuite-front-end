@@ -8,7 +8,9 @@ from typing import Any
 from billiard.einfo import ExceptionInfo
 from celery import Task
 from celery.exceptions import TaskRevokedError
+from redis import Redis
 
+from backend.config import Config
 from backend.types import RunStatus
 from backend.worker.celery import logger
 from backend.worker.database import _update_run_by_task_id, start_pending_run
@@ -27,6 +29,27 @@ class ValidationTask(Task):
 
         logger.info(f"Validation of pipeline configuration succeeded {task_id=}")
         _update_run_by_task_id(task_id, {"status": RunStatus.PENDING})
+        super().on_success(retval, task_id, args, kwargs)
+
+
+class AutoCompleteBuildTask(Task):
+    def on_success(self, retval: Any, task_id: str, args: tuple[Any, ...], kwargs: dict[str, Any]) -> None:
+        """Handler that gets called if the validation task completes successfully.
+
+        Arguments:
+            retval {Any} -- The return value of the task.
+            task_id {str} -- The unique ID of the task.
+            args {tuple} -- Original arguments for the executed task.
+            kwargs {Dict} -- Original keyword arguments for the executed task.
+        """
+
+        logger.info(f"Autocomplete Option building succeeded {task_id=}")
+
+        redis = Redis.from_url(Config.REDIS_URI)
+
+        channel_name = args[2]
+
+        redis.publish(channel_name, task_id)
         super().on_success(retval, task_id, args, kwargs)
 
 

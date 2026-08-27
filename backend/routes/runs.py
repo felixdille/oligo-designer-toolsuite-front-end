@@ -15,16 +15,22 @@ Features:
 :requires: Flask, Flask-Login, MongoDB (via extensions.mongo), OS, datetime, traceback
 """
 
+import json
 from http import HTTPStatus
-from typing import Any
+from typing import Any, cast
 
 from bson import ObjectId
-from flask import Blueprint, abort, current_app, jsonify, send_file, session
+from celery.result import AsyncResult
+from flask import Blueprint, Response, abort, current_app, jsonify, send_file, session
 from flask_login import current_user
+from redis import Redis
 
-from backend.extensions import db
+from backend.config import Config
+from backend.extensions import celery_app, db
 from backend.routes.route_helpers import (
+    get_channel_id,
     get_run_or_404,
+    get_user_context,
 )
 from backend.types import RunStatus
 from backend.utilities.pipeline import delete_pipeline_run_files_and_db
@@ -33,6 +39,7 @@ from backend.utilities.typed_values import (
     safe_join_under,
     timestamp_to_iso,
 )
+from backend.utils import get_channel_name
 
 runs_bp = Blueprint("runs", __name__)
 
@@ -267,3 +274,43 @@ def get_run_status(run_id: ObjectId):
     run = get_run_or_404(run_id)
 
     return jsonify({"state": run["status"]}), HTTPStatus.OK
+
+
+def format_sse(event: str, data: str):
+    event = f"event: {event}"
+    data = f"data: {data}"
+
+    sse_message = f"{event}\n{data}\n\n"
+
+    return sse_message
+
+
+@runs_bp.route("/api/stream", methods=["GET"])
+def get_stream():
+    """
+    Connect to a Server Sent Events Stream for real-time server notifications.
+    """
+
+    channel_id = get_channel_id(*get_user_context())
+
+    channel_name = get_channel_name(channel_id, "autocomplete-options")
+
+    def stream(channel_name: str, logger):
+        redis = Redis.from_url(Config.REDIS_URI)
+
+        p = redis.pubsub(ignore_subscribe_messages=True)
+
+        p.subscribe(channel_name)
+
+        for message in p.listen():
+            if "data" in message:
+                task_id = cast("bytes", message["data"])
+                task_id = task_id.decode("utf-8")
+
+                autocomplete_options = AsyncResult(task_id, app=celery_app).get()
+
+                data = {"task_id": task_id, "autocomplete_options": autocomplete_options}
+
+                yield format_sse("autocomplete-options", json.dumps(data))
+
+    return Response(stream(channel_name, current_app.logger), mimetype="text/event-stream")

@@ -180,6 +180,15 @@ def update_run_in_DB(run_id: ObjectId, data: dict[str, Any]) -> None:
         abort(HTTPStatus.INTERNAL_SERVER_ERROR, "Failed to update the run in the database.")
 
 
+def get_channel_id(user_id: str | None, session_id: str | None):
+    channel_id = session_id if session_id is not None else user_id
+
+    if channel_id is None:
+        abort(HTTPStatus.NOT_FOUND, description="Could not create a channel ID")
+
+    return channel_id
+
+
 # ============================================================================
 # Turnstile Helpers
 # ============================================================================
