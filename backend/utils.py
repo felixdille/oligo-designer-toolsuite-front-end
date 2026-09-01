@@ -8,8 +8,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from glom import glom
-
 from backend.genomic_databases import EnsemblGenomicDatabase, GenomicEntity, NCBIGenomicDatabase
 
 
@@ -35,11 +33,3 @@ def retrieve_genomic_data_from_region_form(region_form: dict[str, Any], cache_di
         files_source = "NCBI"
 
     return cache_info, files_source
-
-
-def get_gene_ids(form_data: dict[str, Any]) -> str:
-    return glom(form_data, "target_probe.oligo_generation.file_region_ids")
-
-
-def get_channel_name(user_id: str, *args):
-    return ":".join([user_id, *args])

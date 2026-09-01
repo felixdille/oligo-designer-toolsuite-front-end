@@ -11,9 +11,9 @@ from glom import assign, glom
 from oligo_designer_toolsuite._exceptions import NoValidRegionIdError, OligoDesignerError
 from pydantic import ValidationError
 
+from backend.autocomplete_utils import get_gene_ids
 from backend.constants import PIPELINE_FILE_INPUT, PIPELINE_MODELS
 from backend.exceptions import ODTEmptyResultError, ODTNoValidRegionIdsError, ODTPipelineError
-from backend.utils import get_gene_ids
 from backend.worker.genomic_regions_file import GenomicRegionsFile
 from backend.worker.utils import build_fallback_error_message
 

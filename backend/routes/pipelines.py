@@ -17,6 +17,7 @@ from glom import assign, glom
 from werkzeug.datastructures import FileStorage, ImmutableMultiDict
 from werkzeug.utils import secure_filename
 
+from backend.autocomplete_utils import get_gene_ids
 from backend.config import CeleryConfig, Config
 from backend.constants import (
     PIPELINE_FILE_INPUT,
@@ -38,7 +39,7 @@ from backend.utilities.typed_values import (
     serialize_path,
 )
 from backend.utilities.validation import validate_genomic_form_data
-from backend.utils import get_gene_ids, utc_now
+from backend.utils import utc_now
 from backend.worker.task_index import Callbacks, Tasks
 
 # Blueprint for Merfish endpoints
