@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { BACKEND_URL } from "../../config";
 import axios from "axios";
 import { getErrorMessage } from "../../utils/errorUtil";
-import { GenomicDropDown } from "./GenomicDropDown";
+import { AnnotationSelect, GenomicDropDown } from "./GenomicDropDown";
 import { useCache } from "../../hooks/useCache";
 import type { NcbiAndEnsemblFormData } from "./types";
 
@@ -94,42 +94,31 @@ export const NcbiAnnotationSelect: React.FC<NcbiAnnotationSelectProps> = ({
         };
     }, [species, kingdom, updateAnnotationReleasesNCBI]);
 
-    const Options = () => {
+    const getOptions = () => {
         if (isLoading) {
-            return (
-                <>
-                    <option>Loading annotation releases...</option>
-                    {value !== "" && <option value={value}>{value}</option>}
-                </>
-            );
+            const options = ["Loading annotation releases..."];
+
+            if (value !== "") {
+                options.push(value);
+            }
+
+            return options;
         }
 
         if (error || !releases) {
-            return <option>Error while loading annotation releases!</option>;
+            return ["Error while loading annotation releases!"];
         }
 
-        return (
-            <>
-                <option value="">Select a release</option>
-                {releases.map((release, idx) => (
-                    <option key={idx} value={release}>
-                        {release}
-                    </option>
-                ))}
-            </>
-        );
+        return releases;
     };
 
     return (
-        <GenomicDropDown
-            id={id}
-            label="Annotation Release"
-            nameAndId="source_params.annotation_release"
-            tooltip={tooltip}
-            value={value}
+        <AnnotationSelect
             handleChange={handleChange}
-        >
-            <Options />
-        </GenomicDropDown>
+            value={value}
+            options={getOptions()}
+            id={id}
+            tooltip={tooltip}
+        />
     );
 };

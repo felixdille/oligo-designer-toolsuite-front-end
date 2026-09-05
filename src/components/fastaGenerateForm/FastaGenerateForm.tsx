@@ -377,19 +377,13 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                                             .annotation_release
                                     }
                                     handleChange={handleEnsChange}
-                                >
-                                    <option value="">Select a release</option>
-                                    {dropDown!.ensembl
-                                        .get(
+                                    options={
+                                        dropDown!.ensembl.get(
                                             formState.formDataEnsembl
                                                 .source_params.species
                                         )!
-                                        .map((release, idx) => (
-                                            <option key={idx} value={release}>
-                                                {release}
-                                            </option>
-                                        ))}
-                                </AnnotationSelect>
+                                    }
+                                />
                             </div>
                             <GenomicRegionSelect
                                 id={`ensembl-${id}`}

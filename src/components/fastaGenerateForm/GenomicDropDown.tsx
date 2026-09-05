@@ -9,6 +9,10 @@ interface GenomicSelectProps {
     handleChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
 }
 
+type AnnotationSelectProps = GenomicSelectProps & {
+    options: string[];
+};
+
 interface GenomicDropDownProps extends GenomicSelectProps {
     label: string;
     nameAndId: string;
@@ -125,9 +129,23 @@ export const TaxonSelect: React.FC<PropsWithChildren<GenomicSelectProps>> = ({
  * @param id - unique ID of the underlying GenomicDropDown
  * @returns A React Component that serves as a annotation release dropdown
  */
-export const AnnotationSelect: React.FC<
-    PropsWithChildren<GenomicSelectProps>
-> = ({ tooltip, value, handleChange, children, id }) => {
+export const AnnotationSelect: React.FC<AnnotationSelectProps> = ({
+    tooltip,
+    value,
+    handleChange,
+    options,
+    id,
+}) => {
+    const buildOptionList = (options: string[]) => (
+        <>
+            {options.map((option, idx) => (
+                <option key={idx} value={option}>
+                    {option}
+                </option>
+            ))}
+        </>
+    );
+
     return (
         <GenomicDropDown
             id={id}
@@ -135,7 +153,7 @@ export const AnnotationSelect: React.FC<
             nameAndId="source_params.annotation_release"
             tooltip={tooltip}
             value={value}
-            children={children}
+            children={buildOptionList(options)}
             handleChange={handleChange}
         />
     );
