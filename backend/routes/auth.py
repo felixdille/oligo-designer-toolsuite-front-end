@@ -29,7 +29,7 @@ from flask_login import LoginManager, UserMixin, current_user, login_required, l
 from werkzeug.security import check_password_hash
 
 from backend.extensions import db, oauth
-from backend.routes.route_helpers import validate_turnstile
+from backend.routes.route_helpers import get_session_id, validate_turnstile
 from backend.utilities.account_cleanup import delete_user_account_data
 from backend.utilities.legal import TERMS_DOCUMENT_KEY, get_published_legal_document
 from backend.utilities.legal_acceptance import (
@@ -122,7 +122,7 @@ def _login(user: User, remember: bool = True):
     session.pop("oauth_token", None)
 
     # Migrate anonymous runs if present
-    session_id = session.get("session_id")
+    session_id = get_session_id()
     if session_id:
         db.runs.update_many(
             {"session_id": session_id},
@@ -331,7 +331,7 @@ def check_auth():
     return jsonify(
         {
             "authenticated": False,
-            "legal": _build_legal_status(session_id=session.get("session_id")),
+            "legal": _build_legal_status(session_id=get_session_id()),
         }
     ), HTTPStatus.OK
 
@@ -340,7 +340,7 @@ def check_auth():
 def accept_terms():
     """Record acceptance of the current terms version for the current user or session."""
     user_id = str(current_user.id) if current_user.is_authenticated else None
-    session_id = None if user_id else session.get("session_id")
+    session_id = None if user_id else get_session_id()
 
     acceptance = record_terms_acceptance(user_id=user_id, session_id=session_id)
 
@@ -446,7 +446,7 @@ def assign_session_id():
         session.permanent = True
         if "session_id" not in session:
             session["session_id"] = str(uuid.uuid4())
-        touch_anonymous_session(session.get("session_id"))
+        touch_anonymous_session(get_session_id())
         # Ensure directory for anonymous user data associated with this session exists
         user_dir = os.path.join(current_app.config["USERDATA_PATH"], "anon", session["session_id"])
         os.makedirs(user_dir, exist_ok=True)

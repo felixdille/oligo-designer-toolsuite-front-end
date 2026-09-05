@@ -8,17 +8,18 @@ import { Trie } from "data-structure-typed";
 // TODO:(BA) investigate useEffect being run too often
 
 interface AutoCompleteRegion {
-    taskId: string;
-    counter: number;
-}
-interface AutoCompleteOption {
     suggestions: string[] | null;
     active: boolean;
 }
+type NewRegionResponse = Record<
+    string,
+    { state: "miss"; task_id: string } | { state: "hit"; suggestions: string[] }
+>;
 
 interface AutoCompleteOptionAnswer {
     task_id: string;
     autocomplete_options: string[];
+    status: "update" | "cached";
 }
 
 export const AutocompleteProvider = ({
@@ -27,7 +28,7 @@ export const AutocompleteProvider = ({
     children: React.ReactNode;
 }) => {
     const [autoCompleteOptions, setAutocompleteOptions] = useState(
-        new Map<string, AutoCompleteOption>()
+        new Map<string, string>()
     );
     const [regionFormMap, setRegionFormMap] = useState(
         new Map<string, AutoCompleteRegion>()
@@ -42,78 +43,91 @@ export const AutocompleteProvider = ({
             source_params: genomicRegionGeneratorForm.source_params,
         });
 
-    const updateAutoCompleteOptions = (taskIds: string[]) => {
-        const activeTaskIdsSet = new Set(taskIds);
-        const allTaskIds = new Set([...taskIds, ...autoCompleteOptions.keys()]);
+    const updateAutoCompleteOptions = (
+        genomicRegionGeneratorForms: GenomicForm[],
+        fetchedRegionIdMap: NewRegionResponse | null
+    ) => {
+        const activeRegionIds = new Set(
+            genomicRegionGeneratorForms.map(getGenomicRegionGeneratorFormId)
+        );
 
-        allTaskIds.forEach((taskId) => {
-            const autoCompleteOption = autoCompleteOptions.get(taskId);
-            const suggestions =
-                autoCompleteOption?.suggestions !== undefined
-                    ? autoCompleteOption.suggestions
-                    : null;
-            const active = activeTaskIdsSet.has(taskId);
+        const activeRegionsMap = [...regionFormMap.entries()].map(
+            ([key, value]) => [
+                key,
+                {
+                    suggestions: value.suggestions,
+                    active: activeRegionIds.has(key),
+                },
+            ]
+        );
 
-            autoCompleteOptions.set(taskId, {
-                suggestions,
-                active,
+        const newRegions: (string | AutoCompleteRegion)[][] = [];
+        const newTaskIds: (string | AutoCompleteRegion)[][] = [];
+
+        if (fetchedRegionIdMap) {
+            Object.entries(fetchedRegionIdMap).forEach(([key, value]) => {
+                if (value.state === "hit") {
+                    newRegions.push([
+                        key,
+                        { suggestions: value.suggestions, active: true },
+                    ]);
+                } else {
+                    newRegions.push([key, { suggestions: null, active: true }]);
+                    newTaskIds.push([value.task_id, key]);
+                }
             });
-        });
 
-        setAutocompleteOptions(new Map(autoCompleteOptions));
+            setAutocompleteOptions(
+                new Map([...autoCompleteOptions.entries(), ...newTaskIds] as [
+                    string,
+                    string,
+                ][])
+            );
+        }
+
+        setRegionFormMap(
+            new Map(
+                activeRegionsMap.concat(newRegions) as [
+                    string,
+                    AutoCompleteRegion,
+                ][]
+            )
+        );
     };
 
     const setAutoCompleteRegions = (
         genomicRegionGeneratorForms: GenomicForm[]
     ) => {
-        const activeTaskIds = genomicRegionGeneratorForms
-            .map(
-                (genomicRegionGeneratorForm) =>
-                    regionFormMap.get(
-                        getGenomicRegionGeneratorFormId(
-                            genomicRegionGeneratorForm
-                        )
-                    )?.taskId
+        const newGenomicRegionGeneratorFormTuples =
+            genomicRegionGeneratorForms.map((genomicRegionGeneratorForm) => [
+                getGenomicRegionGeneratorFormId(genomicRegionGeneratorForm),
+                genomicRegionGeneratorForm,
+            ]);
+
+        const newGenomicRegionGeneratorForms = new Set(
+            newGenomicRegionGeneratorFormTuples.filter(
+                ([id]) => !regionFormMap.has(id as string)
             )
-            .filter((taskId) => taskId !== undefined);
+        );
 
-        const toFetchGenomicRegionGeneratorForms =
-            genomicRegionGeneratorForms.filter(
-                (genomicRegionGeneratorForm) =>
-                    !regionFormMap.has(
-                        getGenomicRegionGeneratorFormId(
-                            genomicRegionGeneratorForm
-                        )
-                    )
-            );
-
-        if (toFetchGenomicRegionGeneratorForms.length > 0) {
+        if (newGenomicRegionGeneratorForms.size > 0) {
             axios
                 .post(
                     BACKEND_URL + `/api/genomic/autocomplete-region`,
-                    toFetchGenomicRegionGeneratorForms,
+                    [...newGenomicRegionGeneratorForms.values()],
                     {
                         withCredentials: true,
                     }
                 )
                 .then((response) => {
-                    const taskIds: string[] = response.data;
-
-                    for (const [index, taskId] of taskIds.entries()) {
-                        regionFormMap.set(
-                            getGenomicRegionGeneratorFormId(
-                                toFetchGenomicRegionGeneratorForms[index]
-                            ),
-                            {
-                                taskId: taskId,
-                                counter: 1,
-                            }
-                        );
-                    }
+                    const taskIds: NewRegionResponse = response.data;
 
                     setRegionFormMap(new Map(regionFormMap));
 
-                    updateAutoCompleteOptions([...activeTaskIds, ...taskIds]);
+                    updateAutoCompleteOptions(
+                        genomicRegionGeneratorForms,
+                        taskIds
+                    );
                 })
                 .catch((error) => {
                     console.error(
@@ -124,7 +138,7 @@ export const AutocompleteProvider = ({
             return;
         }
 
-        updateAutoCompleteOptions(activeTaskIds);
+        updateAutoCompleteOptions(genomicRegionGeneratorForms, null);
     };
 
     useEffect(() => {
@@ -165,11 +179,31 @@ export const AutocompleteProvider = ({
 
             const taskId = autoCompleteAnswer.task_id;
 
-            setAutocompleteOptions(
+            const regionFormId = autoCompleteOptions.get(taskId);
+
+            if (!regionFormId || regionFormId === undefined) {
+                console.error("Missing region form");
+                return;
+            }
+
+            const active = regionFormMap.get(regionFormId)?.active;
+
+            const currentSuggestions =
+                regionFormMap.get(regionFormId)?.suggestions;
+
+            if (
+                autoCompleteAnswer.status === "cached" &&
+                currentSuggestions !== undefined &&
+                currentSuggestions !== null
+            ) {
+                return;
+            }
+
+            setRegionFormMap(
                 new Map(
-                    autoCompleteOptions.set(taskId, {
+                    regionFormMap.set(regionFormId, {
                         suggestions: autoCompleteAnswer.autocomplete_options,
-                        active: autoCompleteOptions.get(taskId)!.active,
+                        active: active === undefined ? false : active,
                     })
                 )
             );
@@ -180,9 +214,9 @@ export const AutocompleteProvider = ({
         return () => {
             eventSource.removeEventListener("autocomplete-options", listener);
         };
-    }, [autoCompleteOptions, setAutocompleteOptions]);
+    }, [autoCompleteOptions, setRegionFormMap, regionFormMap]);
 
-    const validSuggestions = [...autoCompleteOptions.values()]
+    const validSuggestions = [...regionFormMap.values()]
         .filter((val) => val.active && val.suggestions !== null)
         .map((val) => val.suggestions!);
 

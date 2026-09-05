@@ -18,6 +18,27 @@ from backend.utilities.legal_acceptance import require_current_terms_acceptance
 # ============================================================================
 
 
+def get_session_id() -> str | None:
+    session_id = session.get("session_id")
+
+    if not isinstance(session_id, str):
+        return None
+
+    return session_id
+
+
+def get_session_id_checked():
+    session_id = get_session_id()
+
+    if not session_id:
+        abort(
+            HTTPStatus.UNAUTHORIZED,
+            description="Your session has expired. Please refresh the page and try again.",
+        )
+
+    return session_id
+
+
 def get_user_context() -> tuple[None, str] | tuple[str, None]:
     """Get user context (user_id and session_id) based on authentication status.
 
@@ -30,7 +51,7 @@ def get_user_context() -> tuple[None, str] | tuple[str, None]:
     """
     if current_user.is_authenticated:
         return str(current_user.id), None
-    session_id = session.get("session_id")
+    session_id = get_session_id()
     if not session_id:
         abort(
             HTTPStatus.UNAUTHORIZED,
@@ -133,7 +154,7 @@ def build_run_query(run_id: ObjectId, require_ownership: bool = True) -> dict:
         if current_user.is_authenticated:
             query["user_id"] = str(current_user.id)
         else:
-            session_id = session.get("session_id")
+            session_id = get_session_id()
             if not session_id:
                 abort(HTTPStatus.FORBIDDEN)
             query["session_id"] = session_id
@@ -178,15 +199,6 @@ def update_run_in_DB(run_id: ObjectId, data: dict[str, Any]) -> None:
     update_result = db.runs.update_one({"_id": run_id}, {"$set": data})
     if not update_result.acknowledged:
         abort(HTTPStatus.INTERNAL_SERVER_ERROR, "Failed to update the run in the database.")
-
-
-def get_channel_id(user_id: str | None, session_id: str | None):
-    channel_id = session_id if session_id is not None else user_id
-
-    if channel_id is None:
-        abort(HTTPStatus.NOT_FOUND, description="Could not create a channel ID")
-
-    return channel_id
 
 
 # ============================================================================

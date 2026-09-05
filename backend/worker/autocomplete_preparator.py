@@ -14,4 +14,12 @@ def get_genes(annotation_file: str) -> list[str]:
 
 @generic_cache_region.cache_on_arguments()
 def build_autocomplete_options(annotation_file: Path) -> list[str]:
+    """Builds and returns a list of genes, that are suggested by our autocompletion frontend
+
+    Args:
+        annotation_file (Path): The path to the annotation file including the genes
+
+    Returns:
+        list[str]: A list of genes
+    """
     return get_genes(str(annotation_file))

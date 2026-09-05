@@ -8,19 +8,24 @@ Other endpoints are standalone: they run the full pipeline and return the output
 
 from dataclasses import asdict
 from http import HTTPStatus
+from typing import Any
 
+import dogpile.cache.api
 from celery.result import AsyncResult
 from flask import Blueprint, abort, jsonify, request
 from pydantic import ValidationError
 
+from backend.autocomplete_utils import get_autocomplete_cache_key, get_channel_id
+from backend.cache import generic_cache_region
+from backend.config import Config
 from backend.extensions import celery_app
 from backend.genomic_databases import (
     GenomicEntity,
     NCBIGenomicDatabase,
     fetch_dropdown_options,
+    get_genomic_database_by_region_form,
 )
-from backend.routes.route_helpers import get_channel_id, get_user_context
-from backend.utils import get_channel_name
+from backend.routes.event_stream import get_session_channel_id_checked
 from backend.worker.models import GenomicRegionGeneratorAdapter
 from backend.worker.task_index import Tasks
 
@@ -49,15 +54,16 @@ def genomic_get_releases(taxon: str, species: str):
 
 @genomic_bp.route("/api/genomic/autocomplete-region", methods=["POST"])
 def genomic_build_autocomplete_for_region():
-    region_forms = request.get_json()
 
-    task_ids = []
+    # TODO:(BA) rethink current caching approach and potentially include a specific File Cache proxy
 
-    channel_id = get_channel_id(*get_user_context())
+    region_form_tuples: list[tuple[str, dict[str, Any]]] = request.get_json()
 
-    channel_name = get_channel_name(channel_id, "autocomplete-options")
+    region_id_map = {}
 
-    for region_form in region_forms:
+    channel_id = get_channel_id(get_session_channel_id_checked())
+
+    for region_form_id, region_form in region_form_tuples:
         try:
             GenomicRegionGeneratorAdapter.validate_python(region_form)
         except ValidationError:
@@ -71,13 +77,21 @@ def genomic_build_autocomplete_for_region():
         except ValueError:
             abort(HTTPStatus.BAD_REQUEST, "Could not parse Genomic Region Generator Form")
 
-        result = celery_app.send_task(
-            Tasks.GENERATE_AUTOCOMPLETE_OPTIONS, args=(region_form, asdict(genomic_entity), channel_name)
-        )
+        genomic_database = get_genomic_database_by_region_form(region_form, cache_dir=Config.CACHE_DIR)
 
-        task_ids.append(result.id)
+        cache_key = get_autocomplete_cache_key(genomic_entity, genomic_database)
 
-    return jsonify(task_ids), 200
+        cached = generic_cache_region.get(cache_key)
+
+        if cached is not dogpile.cache.api.NO_VALUE and genomic_entity.release != "current":
+            region_id_map[region_form_id] = {"state": "hit", "suggestions": cached["autocomplete_options"]}
+        else:
+            result = celery_app.send_task(
+                Tasks.GENERATE_AUTOCOMPLETE_OPTIONS, args=(region_form, asdict(genomic_entity), channel_id)
+            )
+            region_id_map[region_form_id] = {"state": "miss", "task_id": result.id}
+
+    return jsonify(region_id_map), 200
 
 
 @genomic_bp.route("/api/genomic/autocomplete-options", methods=["POST"])

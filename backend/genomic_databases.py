@@ -35,14 +35,14 @@ class GenomicEntity:
         source_params = region_form.get("source_params", {})
         taxon = source_params.get("taxon")
         species = source_params.get("species")
-        ann_rel = str(source_params.get("annotation_release"))
+        release = str(source_params.get("annotation_release"))
 
-        if species is None or ann_rel is None:
+        if species is None or release is None:
             raise ValueError(
                 "Genomic region generation requires 'species' and 'annotation_release' in source_params."
             )
 
-        return GenomicEntity(taxon=taxon, species=species, release=ann_rel)
+        return GenomicEntity(taxon, species, release)
 
 
 @dataclass(frozen=True)

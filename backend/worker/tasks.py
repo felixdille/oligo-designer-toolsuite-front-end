@@ -2,6 +2,7 @@
 
 import calendar
 import datetime
+import hashlib
 import os
 import shutil
 from collections.abc import Callable
@@ -10,11 +11,14 @@ from logging import Logger
 from pathlib import Path
 from typing import Any
 
+import dogpile.cache.api
 from bson import ObjectId
 from celery.utils.log import get_task_logger
 from glom import glom
 from pydantic import ValidationError
 
+from backend.autocomplete_utils import get_autocomplete_cache_key, get_gene_ids
+from backend.cache import generic_cache_region
 from backend.config import CeleryConfig, Config
 from backend.constants import PIPELINE_GENOMIC_INPUT
 from backend.database import mongo_database
@@ -24,7 +28,7 @@ from backend.genomic_databases import (
     fetch_dropdown_options,
     get_genomic_database_by_region_form,
 )
-from backend.utils import get_gene_ids, utc_now
+from backend.utils import utc_now
 from backend.worker.autocomplete_preparator import build_autocomplete_options
 from backend.worker.celery import app
 from backend.worker.genomic_region_generator_runner import GenomicRegionGeneratorRunner
@@ -575,18 +579,38 @@ def cleanup_anonymous_data() -> dict[str, int]:
     return result
 
 
+def get_autocomplete_options_return_dict(state: str, cache_key: str):
+    return {"state": state, "cache_key": cache_key}
+
+
 @app.task(base=AutoCompleteBuildTask)
 def generate_autocomplete_options(
     region_form: dict[str, Any], genomic_entity_dict: dict[str, Any], channel_name: str
 ):
-
     genomic_entity = GenomicEntity(**genomic_entity_dict)
 
     genomic_database = get_genomic_database_by_region_form(region_form, cache_dir=Config.CACHE_DIR)
 
+    cache_key = get_autocomplete_cache_key(genomic_entity, genomic_database)
+
+    cached = generic_cache_region.get(cache_key)
+
     annotation_file = str(genomic_database.fetch_annotation_file(genomic_entity))
 
-    return build_autocomplete_options(annotation_file)
+    with open(annotation_file, "rb") as f:
+        annotation_file_hash = hashlib.file_digest(f, "sha256").hexdigest()
+
+    if cached is not dogpile.cache.api.NO_VALUE and annotation_file_hash == cached["annotation_file_hash"]:
+        return get_autocomplete_options_return_dict("cached", cache_key)
+
+    autocomplete_options = build_autocomplete_options(annotation_file)
+
+    generic_cache_region.set(
+        cache_key,
+        {"annotation_file_hash": annotation_file_hash, "autocomplete_options": autocomplete_options},
+    )
+
+    return get_autocomplete_options_return_dict("update", cache_key)
 
 
 def validate_gene_id_list(form_data: dict[str, Any], pipeline_name: str):

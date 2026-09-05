@@ -1,5 +1,6 @@
 from backend.routes.admin import admin_bp
 from backend.routes.auth import auth_bp
+from backend.routes.event_stream import event_stream_bp
 from backend.routes.feedback import feedback_bp
 from backend.routes.genomic import genomic_bp
 from backend.routes.legal import legal_bp
@@ -17,3 +18,4 @@ def register_blueprints(app):
     )  # before pipelines so /api/feedback is not caught by /api/<pipeline_name>
     app.register_blueprint(pipelines_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(event_stream_bp)
