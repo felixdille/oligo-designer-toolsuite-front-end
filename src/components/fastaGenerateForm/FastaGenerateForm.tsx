@@ -206,6 +206,19 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
             });
         };
 
+        const updateNcbiAnnotationSelect = useCallback((newValue: string) => {
+            setFormState((formState) => ({
+                ...formState,
+                formDataNcbi: {
+                    ...formState.formDataNcbi,
+                    source_params: {
+                        ...formState.formDataNcbi.source_params,
+                        annotation_release: newValue,
+                    },
+                },
+            }));
+        }, []);
+
         // Handles changes to Ensembl-specific form fields and checkboxes
         const handleEnsChange = (
             e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -326,6 +339,9 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                                     }
                                     handleChange={handleNcbiChange}
                                     form={formState}
+                                    updateAnnotationValue={
+                                        updateNcbiAnnotationSelect
+                                    }
                                 />
                             </div>
                             <GenomicRegionSelect
