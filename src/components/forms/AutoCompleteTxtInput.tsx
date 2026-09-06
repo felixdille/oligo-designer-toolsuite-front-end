@@ -43,6 +43,7 @@ export const AutoCompleteTxtInput: React.FC<AutoCompleteTxtInputProps> = ({
 }) => {
     const [currentOptions, setCurrentOptions] = useState<string[]>([]);
     const [value, setValue] = useState(formData || "");
+    const [shouldShow, setShouldShow] = useState(false);
 
     const { autoCompleteOptions } = useAutoComplete();
 
@@ -61,28 +62,39 @@ export const AutoCompleteTxtInput: React.FC<AutoCompleteTxtInputProps> = ({
     };
 
     return (
-        <Form.Group className="autocomplete-genes-form-group flex-grow-1 flex-shrink-1">
-            <Form.Control
-                disabled={allGenesChecked}
-                id={fieldPathId.$id}
-                onBlur={() => onBlur(fieldPathId.$id, formData)}
-                type="input"
-                onChange={handleChange}
-                value={value}
-                autoComplete="off"
-                className="rounded-0"
-            />
-            {currentOptions && currentOptions.length > 0 && value !== "" && (
-                <ListGroup className="rounded-top-0 autocomplete-genes-list-group border-black">
-                    {currentOptions.map((option, index) => (
-                        <AutoCompleteListItem
-                            option={option}
-                            setValue={setValue}
-                            index={index}
-                        />
-                    ))}
-                </ListGroup>
-            )}
-        </Form.Group>
+        <>
+            <Form.Group className="autocomplete-genes-form-group flex-grow-1 flex-shrink-1">
+                <Form.Control
+                    disabled={allGenesChecked}
+                    id={fieldPathId.$id}
+                    onBlur={() => {
+                        setShouldShow(false);
+                        onBlur(fieldPathId.$id, formData);
+                    }}
+                    type="input"
+                    onChange={handleChange}
+                    value={value}
+                    autoComplete="off"
+                    className="rounded-0"
+                    onFocus={() => {
+                        setShouldShow(true);
+                        setCurrentOptions(
+                            autoCompleteOptions.getWords("", 20, true)
+                        );
+                    }}
+                />
+                {currentOptions && currentOptions.length > 0 && shouldShow && (
+                    <ListGroup className="rounded-top-0 autocomplete-genes-list-group border-black">
+                        {currentOptions.map((option, index) => (
+                            <AutoCompleteListItem
+                                option={option}
+                                setValue={setValue}
+                                index={index}
+                            />
+                        ))}
+                    </ListGroup>
+                )}
+            </Form.Group>
+        </>
     );
 };
