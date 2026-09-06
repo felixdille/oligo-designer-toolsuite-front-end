@@ -7,6 +7,7 @@ interface AutocompleteContextType {
     setAutoCompleteRegions: (
         genomicRegionGeneratorForms: GenomicForm[]
     ) => void;
+    isLoading: boolean;
 }
 
 export const AutocompleteContext = createContext<AutocompleteContextType>(

@@ -1,9 +1,10 @@
 import { type ChangeEvent } from "react";
 import type { FieldProps } from "@rjsf/utils";
-import { Form, InputGroup } from "react-bootstrap";
+import { Alert, Form, InputGroup } from "react-bootstrap";
 import { FiletypeTxt } from "react-bootstrap-icons";
 import { ToolTip } from "../ui/Tooltip";
 import { AutoCompleteTxtInput } from "./AutoCompleteTxtInput";
+import { useAutoComplete } from "../../hooks/useAutocomplete";
 
 /**
  * Renders a custom field, that allows users to input text or a file to input their desired gene targets.
@@ -29,6 +30,8 @@ const TxtUploadInput = (props: FieldProps) => {
     } = registry;
 
     const allGenesChecked = formData === null;
+
+    const { isLoading } = useAutoComplete();
 
     const handleTxtUpload = (e: ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -66,6 +69,11 @@ const TxtUploadInput = (props: FieldProps) => {
                     <ToolTip id={fieldPathId.$id} tip={schema.description} />
                 )}
             </Form.Label>
+            {isLoading && (
+                <Alert variant="warning">
+                    Loading Region Id suggestions...
+                </Alert>
+            )}
             <InputGroup className="d-flex">
                 <InputGroup.Checkbox
                     checked={allGenesChecked}
