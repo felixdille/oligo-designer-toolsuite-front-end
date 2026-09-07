@@ -5,6 +5,7 @@ import { FiletypeTxt } from "react-bootstrap-icons";
 import { ToolTip } from "../ui/Tooltip";
 import { AutoCompleteTxtInput } from "./AutoCompleteTxtInput";
 import { useAutoComplete } from "../../hooks/useAutocomplete";
+import { SelectedRegionIdsList } from "../ui/SelectedItemComponents";
 
 /**
  * Renders a custom field, that allows users to input text or a file to input their desired gene targets.
@@ -32,6 +33,27 @@ const TxtUploadInput = (props: FieldProps) => {
     const allGenesChecked = formData === null;
 
     const { isLoading } = useAutoComplete();
+
+    const rawRegionIds: string[] = formData
+        ? formData
+              .split(",")
+              .map((regionId: string) => regionId.trim())
+              .filter((regionId: string) => regionId)
+        : [];
+
+    const regionIds = [...new Set(rawRegionIds).values()];
+
+    const removeRegionId = (idx: number) => () => {
+        regionIds.splice(idx, 1);
+        onChange(regionIds.join(", "), fieldPathId.path);
+    };
+
+    const addRegionId = (regionId: string) => {
+        onChange(
+            [...new Set([...regionIds, regionId]).values()].join(", "),
+            fieldPathId.path
+        );
+    };
 
     const handleTxtUpload = (e: ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -74,6 +96,11 @@ const TxtUploadInput = (props: FieldProps) => {
                     Loading Region Id suggestions...
                 </Alert>
             )}
+            <SelectedRegionIdsList
+                removeHandler={removeRegionId}
+                selectedRegionIds={regionIds}
+                id={fieldPathId.$id}
+            />
             <InputGroup className="d-flex">
                 <InputGroup.Checkbox
                     checked={allGenesChecked}
@@ -89,7 +116,7 @@ const TxtUploadInput = (props: FieldProps) => {
                     fieldPathId={fieldPathId}
                     formData={formData}
                     onBlur={onBlur}
-                    onChange={onChange}
+                    addRegionId={addRegionId}
                 />
                 <Form.Control
                     type="file"

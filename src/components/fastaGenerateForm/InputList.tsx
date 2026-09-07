@@ -1,7 +1,6 @@
-import { Button, InputGroup } from "react-bootstrap";
-import { Trash } from "react-bootstrap-icons";
 import type { GenomicForm } from "./types";
 import { FilePreview, GenomicFormPreview } from "./InputPreviews";
+import { SelectedItemList } from "../ui/SelectedItemComponents";
 
 /**
  * Discriminated Union Type that describes possible entries of the InputList for the Genomic Region Input
@@ -35,24 +34,20 @@ interface InputListProps {
  * and edit Genomic Input
  */
 export const InputList = ({ id, inputs }: InputListProps) => {
-    return inputs.map((input, idx) => (
-        <InputGroup key={`${id} ${idx}`} className="flex-nowrap">
-            <Button
-                variant="outline-border filled text-black"
-                className="flex-grow-1"
-                onClick={input.type === "form" ? input.editHandler : undefined}
-            >
-                {input.type === "form"
-                    ? GenomicFormPreview(input.data as GenomicForm)
-                    : FilePreview(input.data as File)}
-            </Button>
-            <Button
-                variant="outline-border filled"
-                onClick={input.removeHandler}
-                title="Remove Region"
-            >
-                <Trash />
-            </Button>
-        </InputGroup>
-    ));
+    const selectedItems = inputs.map((input) => ({
+        preview:
+            input.type === "form"
+                ? GenomicFormPreview(input.data as GenomicForm)
+                : FilePreview(input.data as File),
+        removeHandler: input.removeHandler,
+        changeHandler: input.type === "form" ? input.editHandler : undefined,
+    }));
+
+    return (
+        <SelectedItemList
+            selectedItems={selectedItems}
+            id={id}
+            removeToolTip="Remove Region"
+        />
+    );
 };
