@@ -48,26 +48,28 @@ const TxtUploadInput = (props: FieldProps) => {
         onChange(regionIds.join(", "), fieldPathId.path);
     };
 
-    const addRegionId = (regionId: string) => {
+    const addRegionIds = (newRegionIds: string[]) => {
         onChange(
-            [...new Set([...regionIds, regionId]).values()].join(", "),
+            [...new Set([...regionIds, ...newRegionIds]).values()].join(", "),
             fieldPathId.path
         );
     };
+
+    const addRegionId = (regionId: string) => addRegionIds([regionId]);
 
     const handleTxtUpload = (e: ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
             const reader = new FileReader();
             reader.onload = (event) => {
-                let text = event.target?.result as string;
-                // multi line to comma separated
-                text = text
-                    .split("\n")
-                    .map((line) => line.trim())
-                    .filter((line) => line)
-                    .join(", ");
-                onChange(text, fieldPathId.path);
+                const text = event.target?.result as string;
+                // add string array computed from multi line separated Gene Ids in file
+                addRegionIds(
+                    text
+                        .split("\n")
+                        .map((line) => line.trim())
+                        .filter((line) => line)
+                );
             };
             reader.readAsText(file);
             e.target.value = ""; // reset file input
