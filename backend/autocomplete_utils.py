@@ -5,7 +5,7 @@ from glom import glom
 from backend.genomic_databases import EnsemblGenomicDatabase, GenomicEntity, NCBIGenomicDatabase
 
 
-def get_gene_ids(form_data: dict[str, Any]) -> str:
+def get_gene_ids(form_data: dict[str, Any]) -> str | None:
     return glom(form_data, "target_probe.oligo_generation.file_region_ids")
 
 

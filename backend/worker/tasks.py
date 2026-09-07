@@ -631,6 +631,15 @@ def retrieve_autocomplete_options(state: str, cache_key: str, autocomplete_optio
 def validate_gene_id_list(form_data: dict[str, Any], pipeline_name: str):
     gene_ids = get_gene_ids(form_data)
 
+    # None means all gene Ids should be used, so the validation should pass
+    if gene_ids is None:
+        return
+
+    if gene_ids == "":
+        raise ODTValidationError(
+            'No Region Id was given. Either select one or use the "Use all genes" checkbox'
+        )
+
     # TODO:(BA) better way of getting the relevant field
     relevant_genomic_input_path = PIPELINE_GENOMIC_INPUT.get(pipeline_name, [])[0]
 
@@ -646,15 +655,11 @@ def validate_gene_id_list(form_data: dict[str, Any], pipeline_name: str):
 
         valid_gene_ids.update(region_form_gene_ids)
 
-    gene_ids = [gene.strip() for gene in gene_ids.split(",")]
+    gene_ids = {gene.strip() for gene in gene_ids.split(",")}
 
-    invalid_gene_ids = []
+    invalid_gene_ids = gene_ids.difference(valid_gene_ids)
 
-    for gene_id in gene_ids:
-        if gene_id not in valid_gene_ids:
-            invalid_gene_ids.append(gene_id)
-
-    if invalid_gene_ids:
+    if len(invalid_gene_ids) > 0:
         raise ODTValidationError(
             f"The following Gene Ids could not be found in the input data: {'\n'.join(invalid_gene_ids)}"
         )
