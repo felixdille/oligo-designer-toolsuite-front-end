@@ -12,7 +12,7 @@ class Tasks:
     RUN_GENOMIC_REGION_GENERATOR = TASK_ROOT + ".run_genomic_region_generator"
     TRIGGER_DROPDOWN_OPTIONS_FETCHING = TASK_ROOT + ".trigger_dropdown_options_fetching"
     GENERATE_MONTHLY_REPORT = TASK_ROOT + ".generate_monthly_report"
-    GENERATE_AUTOCOMPLETE_OPTIONS = TASK_ROOT + ".generate_autocomplete_options"
+    GENERATE_AND_PUBLISH_AUTOCOMPLETE_OPTIONS = TASK_ROOT + ".generate_and_publish_autocomplete_options"
     VALIDATE_PIPELINE_CONFIG = TASK_ROOT + ".validate_pipeline_config"
 
 

@@ -27,8 +27,10 @@ class ValidationTask(Task):
             kwargs {Dict} -- Original keyword arguments for the executed task.
         """
 
-        logger.info(f"Validation of pipeline configuration succeeded {task_id=}")
-        _update_run_by_task_id(task_id, {"status": RunStatus.PENDING})
+        related_task_id = self.request.stamps[Config.CELERY_PIPELINE_RUN_STAMP]  # type: ignore
+
+        logger.info(f"Validation of pipeline configuration succeeded {related_task_id=}")
+        _update_run_by_task_id(related_task_id, {"status": RunStatus.PENDING})
         super().on_success(retval, task_id, args, kwargs)
 
 

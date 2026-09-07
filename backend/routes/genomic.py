@@ -87,7 +87,8 @@ def genomic_build_autocomplete_for_region():
             region_id_map[region_form_id] = {"state": "hit", "suggestions": cached["autocomplete_options"]}
         else:
             result = celery_app.send_task(
-                Tasks.GENERATE_AUTOCOMPLETE_OPTIONS, args=(region_form, asdict(genomic_entity), channel_id)
+                Tasks.GENERATE_AND_PUBLISH_AUTOCOMPLETE_OPTIONS,
+                args=(region_form, asdict(genomic_entity), channel_id),
             )
             region_id_map[region_form_id] = {"state": "miss", "task_id": result.id}
 

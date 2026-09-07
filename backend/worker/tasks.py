@@ -579,13 +579,24 @@ def cleanup_anonymous_data() -> dict[str, int]:
     return result
 
 
-def get_autocomplete_options_return_dict(state: str, cache_key: str):
+def get_autocomplete_options_return_dict(state: str, cache_key: str, autocomplete_options: list[str]):
     return {"state": state, "cache_key": cache_key}
 
 
 @app.task(base=AutoCompleteBuildTask)
-def generate_autocomplete_options(
+def generate_and_publish_autocomplete_options(
     region_form: dict[str, Any], genomic_entity_dict: dict[str, Any], channel_name: str
+):
+    return generate_autocomplete_options(
+        region_form, genomic_entity_dict, get_autocomplete_options_return_dict
+    )
+
+
+@app.task(base=AutoCompleteBuildTask)
+def generate_autocomplete_options(
+    region_form: dict[str, Any],
+    genomic_entity_dict: dict[str, Any],
+    build_return_value: Callable[[str, str, list[str]], Any],
 ):
     genomic_entity = GenomicEntity(**genomic_entity_dict)
 
@@ -601,7 +612,7 @@ def generate_autocomplete_options(
         annotation_file_hash = hashlib.file_digest(f, "sha256").hexdigest()
 
     if cached is not dogpile.cache.api.NO_VALUE and annotation_file_hash == cached["annotation_file_hash"]:
-        return get_autocomplete_options_return_dict("cached", cache_key)
+        return build_return_value("cached", cache_key, cached["autocomplete_options"])
 
     autocomplete_options = build_autocomplete_options(annotation_file)
 
@@ -610,7 +621,11 @@ def generate_autocomplete_options(
         {"annotation_file_hash": annotation_file_hash, "autocomplete_options": autocomplete_options},
     )
 
-    return get_autocomplete_options_return_dict("update", cache_key)
+    return build_return_value("update", cache_key, autocomplete_options)
+
+
+def retrieve_autocomplete_options(state: str, cache_key: str, autocomplete_options: list[str]):
+    return autocomplete_options
 
 
 def validate_gene_id_list(form_data: dict[str, Any], pipeline_name: str):
@@ -625,7 +640,9 @@ def validate_gene_id_list(form_data: dict[str, Any], pipeline_name: str):
     for region_form in genomic_region_forms:
         genomic_entity = GenomicEntity.from_region_form(region_form)
 
-        region_form_gene_ids = generate_autocomplete_options(region_form, asdict(genomic_entity))
+        region_form_gene_ids = generate_autocomplete_options(
+            region_form, asdict(genomic_entity), retrieve_autocomplete_options
+        )
 
         valid_gene_ids.update(region_form_gene_ids)
 
