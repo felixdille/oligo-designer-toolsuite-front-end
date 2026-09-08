@@ -1,4 +1,4 @@
-import { type ChangeEvent } from "react";
+import { useState, type ChangeEvent } from "react";
 import type { FieldProps } from "@rjsf/utils";
 import { Alert, Form, InputGroup } from "react-bootstrap";
 import { FiletypeTxt } from "react-bootstrap-icons";
@@ -34,6 +34,8 @@ const TxtUploadInput = (props: FieldProps) => {
 
     const { isLoading } = useAutoComplete();
 
+    const [savedRegionIds, setSavedRegionIds] = useState<string[]>([]);
+
     const rawRegionIds: string[] = formData
         ? formData
               .split(",")
@@ -48,9 +50,16 @@ const TxtUploadInput = (props: FieldProps) => {
         onChange(regionIds.join(", "), fieldPathId.path);
     };
 
+    const prepareRegionIdsForFormData = (regionIds: string[]) =>
+        [...new Set([...regionIds]).values()].join(", ");
+
+    const removeAllRegionIds = () => {
+        onChange(undefined, fieldPathId.path);
+    };
+
     const addRegionIds = (newRegionIds: string[]) => {
         onChange(
-            [...new Set([...regionIds, ...newRegionIds]).values()].join(", "),
+            prepareRegionIdsForFormData([...regionIds, ...newRegionIds]),
             fieldPathId.path
         );
     };
@@ -79,9 +88,15 @@ const TxtUploadInput = (props: FieldProps) => {
 
     const handleCheckboxChange = (e: ChangeEvent<HTMLInputElement>) => {
         if (e.target.checked) {
+            setSavedRegionIds(regionIds);
             onChange(null, fieldPathId.path);
         } else if (formData === null) {
-            onChange(undefined, fieldPathId.path);
+            onChange(
+                savedRegionIds.length > 0
+                    ? prepareRegionIdsForFormData(savedRegionIds)
+                    : undefined,
+                fieldPathId.path
+            );
         }
     };
 
@@ -99,6 +114,7 @@ const TxtUploadInput = (props: FieldProps) => {
                 </Alert>
             )}
             <SelectedRegionIdsList
+                removeAllHandler={removeAllRegionIds}
                 removeHandler={removeRegionId}
                 selectedRegionIds={regionIds}
                 id={fieldPathId.$id}

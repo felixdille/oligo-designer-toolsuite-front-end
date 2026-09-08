@@ -6,7 +6,7 @@ interface SelectedItem {
     preview: string;
     removeHandler: () => void;
     changeHandler?: () => void;
-    key: string;
+    id: string;
     removeToolTip: string;
 }
 
@@ -14,10 +14,10 @@ export const SelectedItem = ({
     preview,
     changeHandler,
     removeHandler,
-    key,
+    id,
     removeToolTip,
 }: SelectedItem) => (
-    <InputGroup key={key} className="flex-nowrap">
+    <InputGroup key={id} className="flex-nowrap">
         <Button
             variant="outline-border filled text-black"
             className="flex-grow-1"
@@ -36,7 +36,7 @@ export const SelectedItem = ({
 );
 
 interface SelectedItemListProps {
-    selectedItems: Omit<SelectedItem, "key" | "removeToolTip">[];
+    selectedItems: Omit<SelectedItem, "id" | "removeToolTip">[];
     id: string;
     removeToolTip: string;
 }
@@ -48,7 +48,7 @@ export const SelectedItemList = ({
 }: SelectedItemListProps) =>
     selectedItems.map((selectedItem, idx) => (
         <SelectedItem
-            key={`${id} ${idx}`}
+            id={`${id} ${idx}`}
             preview={selectedItem.preview}
             removeHandler={selectedItem.removeHandler}
             removeToolTip={removeToolTip}
@@ -60,12 +60,14 @@ interface SelectedRegionIdsList {
     selectedRegionIds: string[];
     removeHandler: (idx: number) => () => void;
     id: string;
+    removeAllHandler: () => void;
 }
 
 export const SelectedRegionIdsList = ({
     selectedRegionIds,
     removeHandler,
     id,
+    removeAllHandler,
 }: SelectedRegionIdsList) => {
     const PAGE_SIZE = 15;
     const COLUMN_SIZE = PAGE_SIZE / 3;
@@ -109,6 +111,8 @@ export const SelectedRegionIdsList = ({
 
     const pagedRegionIds = getPagedRegionIds();
 
+    const isNavigatable = pagedRegionIds.length > 1;
+
     return (
         <>
             {selectedRegionIds.length > 0 && (
@@ -128,23 +132,35 @@ export const SelectedRegionIdsList = ({
                             </Stack>
                         ))}
                     </Stack>
-                    {pagedRegionIds.length > 1 && (
-                        <Stack direction="horizontal" className="mt-1">
-                            {pageIdx > 0 && (
-                                <Button onClick={() => setPageIdx(pageIdx - 1)}>
-                                    <ArrowLeft />
-                                </Button>
-                            )}
-                            {pageIdx < pagedRegionIds.length - 1 && (
-                                <Button
-                                    className="ms-auto"
-                                    onClick={() => setPageIdx(pageIdx + 1)}
-                                >
-                                    <ArrowRight />
-                                </Button>
-                            )}
-                        </Stack>
-                    )}
+                    <Stack direction="horizontal" className="mt-1">
+                        {isNavigatable && (
+                            <Button
+                                className={`mr-auto ${pageIdx > 0 ? "visible" : "invisible"}`}
+                                onClick={() => setPageIdx(pageIdx - 1)}
+                            >
+                                <ArrowLeft />
+                            </Button>
+                        )}
+
+                        {removeAllHandler && (
+                            <Button
+                                variant="outline-danger"
+                                className="mx-auto"
+                                onClick={removeAllHandler}
+                                title="Remove item"
+                            >
+                                <Trash /> Remove All
+                            </Button>
+                        )}
+                        {isNavigatable && (
+                            <Button
+                                className={`ml-auto ${pageIdx < pagedRegionIds.length - 1 ? "visible" : "invisible"}`}
+                                onClick={() => setPageIdx(pageIdx + 1)}
+                            >
+                                <ArrowRight />
+                            </Button>
+                        )}
+                    </Stack>
                 </Container>
             )}
         </>
