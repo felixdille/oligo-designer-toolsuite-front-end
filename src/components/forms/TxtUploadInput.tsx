@@ -1,10 +1,9 @@
 import { useState, type ChangeEvent } from "react";
 import type { FieldProps } from "@rjsf/utils";
-import { Alert, Form, InputGroup } from "react-bootstrap";
+import { Form, InputGroup } from "react-bootstrap";
 import { FiletypeTxt } from "react-bootstrap-icons";
 import { ToolTip } from "../ui/Tooltip";
 import { AutoCompleteTxtInput } from "./AutoCompleteTxtInput";
-import { useAutoComplete } from "../../hooks/useAutocomplete";
 import { SelectedRegionIdsList } from "../ui/SelectedItemComponents";
 
 /**
@@ -31,8 +30,6 @@ const TxtUploadInput = (props: FieldProps) => {
     } = registry;
 
     const allGenesChecked = formData === null;
-
-    const { isLoading } = useAutoComplete();
 
     const [savedRegionIds, setSavedRegionIds] = useState<string[]>([]);
 
@@ -108,11 +105,6 @@ const TxtUploadInput = (props: FieldProps) => {
                     <ToolTip id={fieldPathId.$id} tip={schema.description} />
                 )}
             </Form.Label>
-            {isLoading && (
-                <Alert variant="warning">
-                    Loading Region Id suggestions...
-                </Alert>
-            )}
             <SelectedRegionIdsList
                 removeAllHandler={removeAllRegionIds}
                 removeHandler={removeRegionId}

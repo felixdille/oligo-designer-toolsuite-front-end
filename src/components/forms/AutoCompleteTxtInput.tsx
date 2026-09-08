@@ -1,8 +1,9 @@
-import type { ErrorSchema, FieldPathId, FieldPathList } from "@rjsf/utils";
-import { Form, ListGroup } from "react-bootstrap";
+import type { FieldPathId } from "@rjsf/utils";
+import { Form, ListGroup, Stack } from "react-bootstrap";
 import "./AutoCompleteTxtInput.css";
 import { useAutoComplete } from "../../hooks/useAutocomplete";
 import { memo, useState } from "react";
+import Pulse from "../ui/Pulse";
 
 interface AutoCompleteTxtInputProps {
     allGenesChecked: boolean;
@@ -15,13 +16,12 @@ interface AutoCompleteTxtInputProps {
 //TODO:(BA) investigate if memo and this component is really necessary
 export const AutoCompleteListItem: React.FC<{
     option: string;
-    index: number;
     handleClick: React.Dispatch<any>;
-}> = memo(({ option, index, handleClick }) => (
+}> = memo(({ option, handleClick }) => (
     <ListGroup.Item
         className="autocomplete-genes-list-group-item border-0"
         onMouseDown={async () => handleClick(option)}
-        key={index}
+        key={option}
     >
         {option}
     </ListGroup.Item>
@@ -38,7 +38,7 @@ export const AutoCompleteTxtInput: React.FC<AutoCompleteTxtInputProps> = ({
     const [value, setValue] = useState(formData ? (formData as string) : "");
     const [shouldShow, setShouldShow] = useState(false);
 
-    const { autoCompleteOptions } = useAutoComplete();
+    const { autoCompleteOptions, isLoading } = useAutoComplete();
 
     const addRegionAndClearInput = (regionId: string) => {
         addRegionId(regionId);
@@ -81,15 +81,33 @@ export const AutoCompleteTxtInput: React.FC<AutoCompleteTxtInputProps> = ({
                         );
                     }}
                 />
-                {currentOptions && currentOptions.length > 0 && shouldShow && (
+                {shouldShow && (
                     <ListGroup className="rounded-top-0 autocomplete-genes-list-group border-black">
-                        {currentOptions.map((option, index) => (
-                            <AutoCompleteListItem
-                                option={option}
-                                handleClick={addRegionAndClearInput}
-                                index={index}
-                            />
-                        ))}
+                        {isLoading && (
+                            <ListGroup.Item
+                                className="border-0 align-vertical"
+                                key={"loadingWidget"}
+                            >
+                                <Stack
+                                    direction="horizontal"
+                                    gap={2}
+                                    className=""
+                                >
+                                    <Pulse size={20} color={"#004a67"} />
+                                    <span className="align-middle">
+                                        Loading Region Ids...
+                                    </span>
+                                </Stack>
+                            </ListGroup.Item>
+                        )}
+                        {currentOptions &&
+                            currentOptions.length > 0 &&
+                            currentOptions.map((option, index) => (
+                                <AutoCompleteListItem
+                                    option={option}
+                                    handleClick={addRegionAndClearInput}
+                                />
+                            ))}
                     </ListGroup>
                 )}
             </Form.Group>
