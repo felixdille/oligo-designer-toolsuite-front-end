@@ -1,20 +1,31 @@
-import abc
-import multiprocessing
 import os
-import pathlib
+
+os.environ["TQDM_DISABLE"] = "1"
+
+import abc
+import datetime
+import multiprocessing
 import time
 from math import ceil
 from multiprocessing.pool import ApplyResult
 from multiprocessing.shared_memory import SharedMemory
 from typing import Literal
 
+import eccLib
+import gtfparse
 import pandas as pd
+import plotly.express as px
+import plotly.io as pio
+import polars_bio
 from gene_extractor import extract_genes_detached
 from gtf_polars import parse_gtf
 from gtfreader import read_gtf
 from oligo_designer_toolsuite.utils import GffParser
 
 type GTF_PARSING_METHOD = Literal["ODT", "GTFREADER"]
+
+
+pio.get_chrome()
 
 
 class GeneExtractor(abc.ABC):
@@ -31,21 +42,56 @@ class GeneExtractor(abc.ABC):
 
 class PolarsGtfGeneExtractor(GeneExtractor):
     def get_genes(self, annotation_file: str) -> list[str]:
-        lf = parse_gtf(annotation_file, attributes_to_extract=["gene_id"])
-        gene_ids = lf.select(["gene_id"]).collect()["gene_id"]
-
-        return list(set(gene_ids))
+        return list(
+            set(
+                parse_gtf(annotation_file, attributes_to_extract=["gene_id"])
+                .select(["gene_id"])
+                .collect()["gene_id"]
+            )
+        )
 
     def get_name(self) -> str:
-        return "Gtf Polars Gene Extractor"
+        return "gtf-polars"
+
+
+class PolarsBioGeneExtractor(GeneExtractor):
+    def get_genes(self, annotation_file: str) -> list[str]:
+        return list(
+            set(
+                polars_bio.scan_gtf(annotation_file, attr_fields=["gene_id"])
+                .select(["gene_id"])
+                .collect()["gene_id"]
+            )
+        )
+        print()
+
+    def get_name(self) -> str:
+        return "polars-bio"
+
+
+class GtfParseGeneExtractor(GeneExtractor):
+    def get_genes(self, annotation_file: str) -> list[str]:
+        return list(set(gtfparse.read_gtf(annotation_file)["gene_id"]))
+
+    def get_name(self) -> str:
+        return "gtfparse"
+
+
+class EccLibGeneExtractor(GeneExtractor):
+    def get_genes(self, annotation_file: str) -> list[str]:
+        with open(annotation_file) as f:
+            return list(set(eccLib.parseGTF(f).column("gene_id")))
+
+    def get_name(self) -> str:
+        return "eccLib"
 
 
 class OwnRustGeneExtractor(GeneExtractor):
     def get_genes(self, annotation_file: str) -> list[str]:
-        return extract_genes_detached(annotation_file)
+        return list(set(extract_genes_detached(annotation_file)))
 
     def get_name(self) -> str:
-        return "Own Rust Parser"
+        return "own rust parser"
 
 
 class OwnGeneExtractor(GeneExtractor):
@@ -174,7 +220,7 @@ class OwnGeneExtractor(GeneExtractor):
         return genes
 
     def get_genes(self, annotation_file: str) -> list[str]:
-        return self._get_genes_multi(annotation_file)
+        return list(set(self._get_genes_multi(annotation_file)))
 
     def get_name(self) -> str:
         return "Own Parser"
@@ -182,98 +228,149 @@ class OwnGeneExtractor(GeneExtractor):
 
 class ODTGeneExtractor(GeneExtractor):
     def get_genes(self, annotation_file: str) -> list[str]:
-        parser = GffParser()
-
-        annotation = parser.parse_annotation_from_gff(annotation_file)
-
-        # parse_annotation_from_gff could return a string if file_pickle is set
-        genes = list(set(annotation["gene_id"]))  # type: ignore
-
-        return genes
+        return list(set(GffParser().parse_annotation_from_gff(annotation_file)["gene_id"]))  # type: ignore
 
     def get_name(self):
-        return "Oligo Designer Toolsuite GffParser"
+        return "ODT GffParser"
 
 
 class GtfReaderGeneExtractor(GeneExtractor):
     def get_genes(self, annotation_file: str) -> list[str]:
-        annotation = read_gtf(annotation_file)
-
-        genes = list(set(annotation["gene_id"]))
-
-        return genes
+        return list(set(read_gtf(annotation_file)["gene_id"]))
 
     def get_name(self):
-        return "gtfreader library Gtf Parser"
+        return "gtfreader"
 
 
-class GTFParser:
-    def __init__(self, parsing_method: GTF_PARSING_METHOD):
-        self._parsing_method_to_parser: dict[GTF_PARSING_METHOD, GeneExtractor] = {
-            "ODT": ODTGeneExtractor(),
-            "GTFREADER": GtfReaderGeneExtractor(),
+class ReferenceGeneList:
+    def __init__(self, parser, annotation_file):
+        self.parser = parser
+        self.gene_ids = set(self.parser.get_genes(annotation_file))
+
+    def check(self, gene_ids: list[str]):
+        return
+
+
+class Benchmark:
+    def __init__(self, name: str | None = None, runs: int = 1, file_path: str | None = None):
+        self.annotation_file_paths: list[str] = self._collect_gtf_files(
+            "/home/felix/Dokumente/gtf-benchmark/"
+        )
+
+        self.reference_parser = ODTGeneExtractor()
+
+        self.refence_gene_ids = {}
+
+        self.gene_extractors: list[GeneExtractor] = [
+            self.reference_parser,
+            GtfReaderGeneExtractor(),
+            PolarsGtfGeneExtractor(),
+            OwnGeneExtractor(),
+            OwnRustGeneExtractor(),
+            # EccLibGeneExtractor(),
+            GtfParseGeneExtractor(),
+            PolarsBioGeneExtractor(),
+        ]
+        self.runs = runs
+        self.name = name
+
+        self.file_path = file_path
+        self.df = None if self.file_path is None else pd.read_csv(file_path)
+
+    def _collect_gtf_files(self, dir_path: str):
+        return [dir_path + file_name for file_name in os.listdir(dir_path)]
+
+    def run(self):
+        if self.file_path:
+            return
+
+        results = []
+        for i in range(self.runs):
+            for annotation_file_path in self.annotation_file_paths:
+                print(f"Running benchmark on file: {annotation_file_path}")
+                if not self.refence_gene_ids.get(annotation_file_path):
+                    self.refence_gene_ids[annotation_file_path] = set(
+                        self.reference_parser.get_genes(annotation_file_path)
+                    )
+                for gene_extractor in self.gene_extractors:
+                    results.append(
+                        {
+                            **self._run_single(
+                                gene_extractor,
+                                annotation_file_path,
+                                self.refence_gene_ids[annotation_file_path],
+                            ),
+                            "Run": i,
+                        }
+                    )
+
+        df = pd.DataFrame.from_records(results)
+        self.df = df
+
+    def _run_single(self, parser: GeneExtractor, annotation_file: str, refence_gene_ids: set[str]):
+
+        time_start = time.perf_counter()
+
+        _genes = parser.get_genes(annotation_file)
+
+        time_end = time.perf_counter()
+
+        duration = time_end - time_start
+
+        print(f"Ran Benchmark for: {parser.get_name()}")
+
+        if set(_genes) != set(refence_gene_ids):
+            print(f"Differences: {set(_genes) ^ set(refence_gene_ids)}")
+
+        return {
+            "Duration": duration,
+            "Annotation File": annotation_file.rsplit("/", 1)[-1],
+            "Parser": parser.get_name(),
         }
 
-        self.gtf_parser = self._parsing_method_to_parser[parsing_method]
+    def _sort(self):
+        self.df = self.df.sort_values("mean_duration")
 
-    def get_genes(file_path: pathlib.Path | str):
-        file_path = str(file_path)
+    def visualize_benchmark(self, show=True):
+        self._sort()
+        fig = px.histogram(
+            self.df,
+            x="Annotation File",
+            y="mean_duration",
+            color="Parser",
+            barmode="group",
+            height=400,
+        )
 
+        if show:
+            fig.show()
+        else:
+            return fig
 
-def run_gene_extractor(gene_extractor: GeneExtractor, annotation_file_path: str):
-    time_start = time.perf_counter()
+    def aggregate_runs(self):
+        self.df = self.df.groupby(["Parser", "Annotation File"], as_index=False).aggregate(
+            mean_duration=("Duration", "mean"),
+            std_deviation_duration=("Duration", "std"),
+        )
 
-    gene_extractor.get_genes(annotation_file_path)
+    def _get_save_file_name(self):
+        return f"{self.name if self.name else datetime.now(datetime.UTC)}"
 
-    return time.perf_counter() - time_start
+    def save_visualization(self):
+        fig = self.visualize_benchmark(False)
+        fig.write_image(f"{self._get_save_file_name()}.pdf")
 
-
-def benchmark():
-    RUNS = 5
-
-    annotation_file_paths: list[str] = [
-        "/home/felixd/Schreibtisch/odt-cloud/frontend-ba/backend/cache/ncbi/1ea60503ae9cef3329d5900ff17d5af7-GCF_046534395.1_ASM4653439v1_genomic.gtf",
-        "/home/felixd/Schreibtisch/odt-cloud/frontend-ba/backend/cache/ncbi/2af7f736f8fc2a32bd1a49cfe35353ef-GCF_009428885.1_ASM942888v1_genomic.gtf",
-        "/home/felixd/Schreibtisch/odt-cloud/frontend-ba/backend/cache/ncbi/81295d4fc9c4f759773d70b1a408a6fd-GCF_000001405.40_GRCh38.p14_genomic.gtf",
-    ]
-
-    gene_extractors: list[GeneExtractor] = [
-        ODTGeneExtractor(),
-        GtfReaderGeneExtractor(),
-    ]
-
-    results = {}
-
-    for annotation_file_path in annotation_file_paths:
-        results[annotation_file_path] = {}
-
-        for gene_extractor in gene_extractors:
-            gene_extractor_name = gene_extractor.get_name()
-            results[annotation_file_path][gene_extractor_name] = []
-
-            for i in range(RUNS):
-                results[annotation_file_path][gene_extractor_name].append(
-                    run_gene_extractor(gene_extractor, annotation_file_path)
-                )
-
-    for file_path in annotation_file_paths:
-        print(pd.DataFrame.from_dict(results[file_path]))
+    def save(self):
+        with open(f"{self.name if self.name else datetime.now(datetime.UTC)}.csv", "w+") as f:
+            self.df.to_csv(f)
 
 
-def test():
-    start = time.perf_counter()
-    path = "/home/felixd/Downloads/GCF_000001405.40_GRCh38.p14_genomic.gtf"
-
-    # print("ODT")
-    # extractor = ODTGeneExtractor()
-    # extractor.get_genes(path)
-
-    print("mine")
-    extractor = PolarsGtfGeneExtractor()
-    genes = extractor.get_genes(path)
-    print(len(set(genes)))
-    print(f"Time: {time.perf_counter() - start}")
+def main_benchmark():
+    benchmark = Benchmark("full-run")
+    benchmark.aggregate_runs()
+    benchmark.save()
+    benchmark.visualize_benchmark()
 
 
 if __name__ == "__main__":
-    test()
+    main_benchmark()
