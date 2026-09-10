@@ -127,7 +127,7 @@ class OwnGeneExtractor(GeneExtractor):
             for i, field in enumerate(fields):
                 key, value = self.gff_parser._parse_field(field, i)
                 if key == "gene_id" and value:
-                    genes.append(value)
+                    genes.append(value.split('"')[1])
                     break
 
             message_buffer.close()
@@ -162,8 +162,10 @@ class OwnGeneExtractor(GeneExtractor):
 
     def _get_genes_multi(self, annotation_file: str) -> list[str]:
         with open(annotation_file) as f:
+            break_line = None
             for line in f:
                 if not line.startswith("#"):
+                    break_line = line
                     break
 
             results: list[ApplyResult] = []
@@ -172,7 +174,7 @@ class OwnGeneExtractor(GeneExtractor):
 
             with multiprocessing.Pool(processes=self.WORKERS) as p:
                 tasks = []
-                last_bit = ""
+                last_bit = break_line
 
                 index = 0
                 while True:
@@ -253,13 +255,13 @@ class ReferenceGeneList:
 
 class Benchmark:
     def __init__(self, name: str | None = None, runs: int = 1, file_path: str | None = None):
-        self.annotation_file_paths: list[str] = self._collect_gtf_files(
-            "/home/felix/Dokumente/gtf-benchmark/"
-        )
+        self.annotation_file_dir = "/home/felix/Dokumente/gtf-benchmark/"
+
+        self.annotation_file_paths: list[str] = self._collect_gtf_files(self.annotation_file_dir)
+
+        self.reference_file_dir = f"{self.annotation_file_dir}reference_genes/"
 
         self.reference_parser = ODTGeneExtractor()
-
-        self.refence_gene_ids = {}
 
         self.gene_extractors: list[GeneExtractor] = [
             self.reference_parser,
@@ -267,7 +269,7 @@ class Benchmark:
             PolarsGtfGeneExtractor(),
             OwnGeneExtractor(),
             OwnRustGeneExtractor(),
-            # EccLibGeneExtractor(),
+            EccLibGeneExtractor(),
             GtfParseGeneExtractor(),
             PolarsBioGeneExtractor(),
         ]
@@ -278,7 +280,7 @@ class Benchmark:
         self.df = None if self.file_path is None else pd.read_csv(file_path)
 
     def _collect_gtf_files(self, dir_path: str):
-        return [dir_path + file_name for file_name in os.listdir(dir_path)]
+        return [dir_path + file_name for file_name in os.listdir(dir_path) if file_name.endswith(".gtf")]
 
     def run(self):
         if self.file_path:
@@ -288,17 +290,12 @@ class Benchmark:
         for i in range(self.runs):
             for annotation_file_path in self.annotation_file_paths:
                 print(f"Running benchmark on file: {annotation_file_path}")
-                if not self.refence_gene_ids.get(annotation_file_path):
-                    self.refence_gene_ids[annotation_file_path] = set(
-                        self.reference_parser.get_genes(annotation_file_path)
-                    )
                 for gene_extractor in self.gene_extractors:
                     results.append(
                         {
                             **self._run_single(
                                 gene_extractor,
                                 annotation_file_path,
-                                self.refence_gene_ids[annotation_file_path],
                             ),
                             "Run": i,
                         }
@@ -307,23 +304,30 @@ class Benchmark:
         df = pd.DataFrame.from_records(results)
         self.df = df
 
-    def _run_single(self, parser: GeneExtractor, annotation_file: str, refence_gene_ids: set[str]):
+    def _run_single(self, parser: GeneExtractor, annotation_file: str):
 
-        time_start = time.perf_counter()
+        time_start = time.perf_counter_ns()
 
         _genes = parser.get_genes(annotation_file)
 
-        time_end = time.perf_counter()
+        time_end = time.perf_counter_ns()
 
         duration = time_end - time_start
 
+        duration_s = duration / 10**3
+
         print(f"Ran Benchmark for: {parser.get_name()}")
 
-        if set(_genes) != set(refence_gene_ids):
-            print(f"Differences: {set(_genes) ^ set(refence_gene_ids)}")
+        annotation_file_name = annotation_file.rsplit("/", 1)[-1]
+
+        with open(f"{self.reference_file_dir}{annotation_file_name}.genes.txt") as f:
+            reference_gene_ids = f.read().splitlines()
+
+        if set(_genes) != set(reference_gene_ids):
+            print(f"Differences: {set(_genes) ^ set(reference_gene_ids)}")
 
         return {
-            "Duration": duration,
+            "Duration": duration_s,
             "Annotation File": annotation_file.rsplit("/", 1)[-1],
             "Parser": parser.get_name(),
         }
@@ -367,9 +371,41 @@ class Benchmark:
 
 def main_benchmark():
     benchmark = Benchmark("full-run")
+    benchmark.run()
     benchmark.aggregate_runs()
     benchmark.save()
     benchmark.visualize_benchmark()
+
+
+def build_gene_list():
+    files = Benchmark("")._collect_gtf_files("/home/felix/Dokumente/gtf-benchmark/")
+
+    for file in files:
+        genes = list(set(GffParser().parse_annotation_from_gff(file)["gene_id"]))
+        with open(f"{file}.genes.txt", "w+") as f:
+            f.write("\n".join(genes))
+
+
+def test():
+    annotation_file = "/home/felix/Dokumente/gtf-benchmark/GCF_003935025.1_Abrus_2018_genomic.gtf"
+
+    genes = OwnGeneExtractor().get_genes(annotation_file)
+
+    print(len(genes))
+
+    genes_reference = ODTGeneExtractor().get_genes(annotation_file)
+
+    print(len(genes_reference))
+
+    differences = set(genes) ^ set(genes_reference)
+
+    print(differences)
+
+    with open("genes.txt", "w+") as f:
+        f.write("\n".join(genes))
+
+    with open("genes_reference.txt", "w+") as f:
+        f.write("\n".join(genes_reference))
 
 
 if __name__ == "__main__":
