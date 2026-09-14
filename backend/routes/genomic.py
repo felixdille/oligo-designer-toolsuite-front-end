@@ -55,8 +55,6 @@ def genomic_get_releases(taxon: str, species: str):
 @genomic_bp.route("/api/genomic/autocomplete-region", methods=["POST"])
 def genomic_build_autocomplete_for_region():
 
-    # TODO:(BA) rethink current caching approach and potentially include a specific File Cache proxy
-
     region_form_tuples: list[tuple[str, dict[str, Any]]] = request.get_json()
 
     region_id_map = {}

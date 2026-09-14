@@ -592,7 +592,6 @@ def generate_and_publish_autocomplete_options(
     )
 
 
-@app.task(base=AutoCompleteBuildTask)
 def generate_autocomplete_options(
     region_form: dict[str, Any],
     genomic_entity_dict: dict[str, Any],
@@ -640,7 +639,6 @@ def validate_gene_id_list(form_data: dict[str, Any], pipeline_name: str):
             'No Region Id was given. Either select one or use the "Use all genes" checkbox'
         )
 
-    # TODO:(BA) better way of getting the relevant field
     relevant_genomic_input_path = PIPELINE_GENOMIC_INPUT.get(pipeline_name, [])[0]
 
     valid_gene_ids = set()

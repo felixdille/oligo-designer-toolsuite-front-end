@@ -12,9 +12,17 @@ from backend.autocomplete_utils import get_channel_id
 from backend.cache import generic_cache_region
 from backend.config import Config
 from backend.extensions import celery_app
-from backend.routes.runs import format_sse
 
 event_stream_bp = Blueprint("event_stream", __name__)
+
+
+def format_sse(event: str, data: str):
+    event = f"event: {event}"
+    data = f"data: {data}"
+
+    sse_message = f"{event}\n{data}\n\n"
+
+    return sse_message
 
 
 def get_session_channel_id_checked() -> str:

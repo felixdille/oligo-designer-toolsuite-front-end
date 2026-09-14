@@ -13,7 +13,6 @@ interface AutoCompleteTxtInputProps {
     addRegionId: (regionId: string) => void;
 }
 
-//TODO:(BA) investigate if memo and this component is really necessary
 export const AutoCompleteListItem: React.FC<{
     option: string;
     handleClick: React.Dispatch<any>;
@@ -50,7 +49,7 @@ export const AutoCompleteTxtInput: React.FC<AutoCompleteTxtInputProps> = ({
 
         setValue(input);
 
-        const matchingOptions = autoCompleteOptions.getWords(input, 20);
+        const matchingOptions = autoCompleteOptions.getWords(input, 20, true);
         setCurrentOptions(matchingOptions);
 
         if (input.endsWith(",")) {

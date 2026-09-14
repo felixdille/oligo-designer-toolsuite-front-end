@@ -102,6 +102,13 @@ const ConfigurableGenomicInput = ({
     };
 
     useEffect(() => {
+        // only update if it is genomic input for the target probes
+        if (
+            fieldPathId.$id !==
+            "root_target_probe_oligo_generation_files_fasta_probe_database"
+        )
+            return;
+
         const genomicRegions = (formData as GenomicFormOrFile[])
             .filter((data) => Object.hasOwn(data, "source"))
             .map((data) => data as GenomicForm);
@@ -141,16 +148,14 @@ const ConfigurableGenomicInput = ({
                         return {
                             type: "form",
                             data: data as GenomicForm,
-                            editHandler: () => {
+                            editHandler: () =>
                                 handleGenomicFormEdit(
                                     data as GenomicForm,
                                     onChange,
                                     formData.indexOf(data)
-                                );
-                            },
-                            removeHandler: () => {
-                                handleRemove(formData.indexOf(data));
-                            },
+                                ),
+                            removeHandler: () =>
+                                handleRemove(formData.indexOf(data)),
                         };
                     } else {
                         return {

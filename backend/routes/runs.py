@@ -268,12 +268,3 @@ def get_run_status(run_id: ObjectId):
     run = get_run_or_404(run_id)
 
     return jsonify({"state": run["status"]}), HTTPStatus.OK
-
-
-def format_sse(event: str, data: str):
-    event = f"event: {event}"
-    data = f"data: {data}"
-
-    sse_message = f"{event}\n{data}\n\n"
-
-    return sse_message

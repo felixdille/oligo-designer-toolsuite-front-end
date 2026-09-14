@@ -27,18 +27,6 @@ def get_session_id() -> str | None:
     return session_id
 
 
-def get_session_id_checked():
-    session_id = get_session_id()
-
-    if not session_id:
-        abort(
-            HTTPStatus.UNAUTHORIZED,
-            description="Your session has expired. Please refresh the page and try again.",
-        )
-
-    return session_id
-
-
 def get_user_context() -> tuple[None, str] | tuple[str, None]:
     """Get user context (user_id and session_id) based on authentication status.
 
