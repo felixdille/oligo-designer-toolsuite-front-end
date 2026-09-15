@@ -59,24 +59,30 @@ const TxtUploadInput = (props: FieldProps) => {
     };
 
     const addRegionIds = (newRegionIds: string[]) => {
-        const missingRegionIds = newRegionIds.filter(
-            (regionId) => !autoCompleteOptions.has(regionId)
-        );
+        let toAddRegions = newRegionIds;
 
-        const validRegionIds = newRegionIds.filter((regionId) =>
-            autoCompleteOptions.has(regionId)
-        );
+        if (allActiveRegionsFetched) {
+            const missingRegionIds = newRegionIds.filter(
+                (regionId) => !autoCompleteOptions.has(regionId)
+            );
 
-        if (allActiveRegionsFetched && missingRegionIds.length > 0) {
-            showToast({
-                type: "danger",
-                content: `Could not find the following Region ID(s) in any of the selected Genomic Regions: \n ${missingRegionIds.join("\n")}`,
-                title: "Can not insert invalid Region IDs",
-            });
+            const validRegionIds = newRegionIds.filter((regionId) =>
+                autoCompleteOptions.has(regionId)
+            );
+
+            toAddRegions = validRegionIds;
+
+            if (allActiveRegionsFetched && missingRegionIds.length > 0) {
+                showToast({
+                    type: "danger",
+                    content: `Could not find the following Region ID(s) in any of the selected Genomic Regions: \n ${missingRegionIds.join("\n")}`,
+                    title: "Can not insert invalid Region IDs",
+                });
+            }
         }
 
         onChange(
-            prepareRegionIdsForFormData([...regionIds, ...validRegionIds]),
+            prepareRegionIdsForFormData([...regionIds, ...toAddRegions]),
             fieldPathId.path
         );
     };

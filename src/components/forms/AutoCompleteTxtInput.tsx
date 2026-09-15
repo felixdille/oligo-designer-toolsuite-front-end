@@ -93,7 +93,6 @@ export const AutoCompleteTxtInput: React.FC<AutoCompleteTxtInputProps> = ({
                         );
                     }}
                     onKeyDown={(event) => {
-                        console.log(event);
                         switch (event.key) {
                             case "Enter":
                                 addRegionIdsAndClearInput([value]);
