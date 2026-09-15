@@ -38,7 +38,7 @@ export const NcbiAnnotationSelect: React.FC<NcbiAnnotationSelectProps> = ({
 }) => {
     const { cached } = useCache();
     const [releases, setReleases] = useState<string[]>();
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const kingdom = form.formDataNcbi.source_params.taxon;
@@ -90,6 +90,7 @@ export const NcbiAnnotationSelect: React.FC<NcbiAnnotationSelectProps> = ({
                 setReleases(data);
                 if (data !== undefined)
                     updateAnnotationValue(value === "" ? data[0] : value);
+                setIsLoading(false);
             } else {
                 setIsLoading(true);
             }
