@@ -84,16 +84,26 @@ def get_stream():
         event_handlers = {
             "autocomplete-options": handle_new_autocomplete_option,
         }
+        try:
+            while True:
+                message = p.get_message(True, 10)
 
-        for message in p.listen():
-            if "channel" not in message:
-                continue
+                if message is None:
+                    yield format_sse("heartbeat", "")
+                    continue
 
-            channel_id = cast(bytes, message["channel"]).decode("utf-8")
-            topic = channel_id.rsplit(":", 1)[1]
+                if "channel" not in message:
+                    continue
 
-            event_handler = event_handlers[topic]
-            yield event_handler(message)
+                channel_id = cast(bytes, message["channel"]).decode("utf-8")
+                topic = channel_id.rsplit(":", 1)[1]
+
+                event_handler = event_handlers[topic]
+                yield event_handler(message)
+        except (GeneratorExit, OSError):
+            pass
+        finally:
+            p.close()
 
     return Response(stream(), mimetype="text/event-stream")  # type: ignore
 

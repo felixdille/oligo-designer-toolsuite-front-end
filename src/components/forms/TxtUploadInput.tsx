@@ -63,17 +63,20 @@ const TxtUploadInput = (props: FieldProps) => {
             (regionId) => !autoCompleteOptions.has(regionId)
         );
 
+        const validRegionIds = newRegionIds.filter((regionId) =>
+            autoCompleteOptions.has(regionId)
+        );
+
         if (allActiveRegionsFetched && missingRegionIds.length > 0) {
             showToast({
                 type: "danger",
                 content: `Could not find the following Region ID(s) in any of the selected Genomic Regions: \n ${missingRegionIds.join("\n")}`,
                 title: "Can not insert invalid Region IDs",
             });
-            return;
         }
 
         onChange(
-            prepareRegionIdsForFormData([...regionIds, ...newRegionIds]),
+            prepareRegionIdsForFormData([...regionIds, ...validRegionIds]),
             fieldPathId.path
         );
     };

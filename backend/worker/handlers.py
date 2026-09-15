@@ -52,6 +52,7 @@ class AutoCompleteBuildTask(Task):
         channel_name = args[2]
 
         redis.publish(channel_name, task_id)
+        redis.close()
         super().on_success(retval, task_id, args, kwargs)
 
 
