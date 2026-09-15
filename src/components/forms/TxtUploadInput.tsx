@@ -5,6 +5,8 @@ import { FiletypeTxt } from "react-bootstrap-icons";
 import { ToolTip } from "../ui/Tooltip";
 import { AutoCompleteTxtInput } from "./AutoCompleteTxtInput";
 import { SelectedRegionIdsList } from "../ui/SelectedItemComponents";
+import { useAutoComplete } from "../../hooks/useAutocomplete";
+import { showToast } from "../../utils/toastUtil";
 
 /**
  * Renders a custom field, that allows users to input text or a file to input their desired gene targets.
@@ -40,6 +42,8 @@ const TxtUploadInput = (props: FieldProps) => {
               .filter((regionId: string) => regionId)
         : [];
 
+    const { autoCompleteOptions, allActiveRegionsFetched } = useAutoComplete();
+
     const regionIds = [...new Set(rawRegionIds).values()];
 
     const removeRegionId = (idx: number) => () => {
@@ -55,13 +59,24 @@ const TxtUploadInput = (props: FieldProps) => {
     };
 
     const addRegionIds = (newRegionIds: string[]) => {
+        const missingRegionIds = newRegionIds.filter(
+            (regionId) => !autoCompleteOptions.has(regionId)
+        );
+
+        if (allActiveRegionsFetched && missingRegionIds.length > 0) {
+            showToast({
+                type: "danger",
+                content: `Could not find the following Region ID(s) in any of the selected Genomic Regions: \n ${missingRegionIds.join("\n")}`,
+                title: "Can not insert invalid Region IDs",
+            });
+            return;
+        }
+
         onChange(
             prepareRegionIdsForFormData([...regionIds, ...newRegionIds]),
             fieldPathId.path
         );
     };
-
-    const addRegionId = (regionId: string) => addRegionIds([regionId]);
 
     const handleTxtUpload = (e: ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -126,7 +141,7 @@ const TxtUploadInput = (props: FieldProps) => {
                     fieldPathId={fieldPathId}
                     formData={formData}
                     onBlur={onBlur}
-                    addRegionId={addRegionId}
+                    addRegionIds={addRegionIds}
                 />
                 <Form.Control
                     type="file"

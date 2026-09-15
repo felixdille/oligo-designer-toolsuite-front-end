@@ -233,6 +233,10 @@ export const AutocompleteProvider = ({
         regionIdToAutoCompleteMap,
     ]);
 
+    const allActiveRegionsFetched = [
+        ...regionIdToAutoCompleteMap.values(),
+    ].every((val) => val.active && val.suggestions !== null);
+
     const validSuggestions = [...regionIdToAutoCompleteMap.values()]
         .filter((val) => val.active && val.suggestions !== null)
         .map((val) => val.suggestions!);
@@ -245,6 +249,7 @@ export const AutocompleteProvider = ({
                 setAutoCompleteRegions,
                 autoCompleteOptions: new Trie(readyAutoCompletOptions),
                 isLoading,
+                allActiveRegionsFetched,
             }}
         >
             {children}

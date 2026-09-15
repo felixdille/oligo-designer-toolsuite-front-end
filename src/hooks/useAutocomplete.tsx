@@ -8,6 +8,7 @@ interface AutocompleteContextType {
         genomicRegionGeneratorForms: GenomicForm[]
     ) => void;
     isLoading: boolean;
+    allActiveRegionsFetched: boolean;
 }
 
 export const AutocompleteContext = createContext<AutocompleteContextType>(

@@ -10,7 +10,7 @@ interface AutoCompleteTxtInputProps {
     fieldPathId: FieldPathId;
     formData: any;
     onBlur: (id: string, value: any) => void;
-    addRegionId: (regionId: string) => void;
+    addRegionIds: (regionIds: string[]) => void;
 }
 
 export const AutoCompleteListItem: React.FC<{
@@ -31,7 +31,7 @@ export const AutoCompleteTxtInput: React.FC<AutoCompleteTxtInputProps> = ({
     fieldPathId,
     formData,
     onBlur,
-    addRegionId,
+    addRegionIds,
 }) => {
     const [currentOptions, setCurrentOptions] = useState<string[]>([]);
     const [value, setValue] = useState(formData ? (formData as string) : "");
@@ -39,8 +39,10 @@ export const AutoCompleteTxtInput: React.FC<AutoCompleteTxtInputProps> = ({
 
     const { autoCompleteOptions, isLoading } = useAutoComplete();
 
-    const addRegionAndClearInput = (regionId: string) => {
-        addRegionId(regionId);
+    const MAX_SUGGESTIONS_SHOWN = 10;
+
+    const addRegionIdsAndClearInput = (regionIds: string[]) => {
+        addRegionIds(regionIds);
         setValue("");
     };
 
@@ -49,12 +51,19 @@ export const AutoCompleteTxtInput: React.FC<AutoCompleteTxtInputProps> = ({
 
         setValue(input);
 
-        const matchingOptions = autoCompleteOptions.getWords(input, 20, true);
+        const matchingOptions = autoCompleteOptions.getWords(
+            input,
+            MAX_SUGGESTIONS_SHOWN,
+            true
+        );
         setCurrentOptions(matchingOptions);
 
-        if (input.endsWith(",")) {
-            const regionId = input.split(",", 1)[0].trim();
-            addRegionAndClearInput(regionId);
+        if (input.includes(",")) {
+            const regionIds = input
+                .split(",")
+                .map((regionId) => regionId.trim())
+                .filter((regionId) => regionId);
+            addRegionIdsAndClearInput(regionIds);
         }
     };
 
@@ -76,8 +85,20 @@ export const AutoCompleteTxtInput: React.FC<AutoCompleteTxtInputProps> = ({
                     onFocus={() => {
                         setShouldShow(true);
                         setCurrentOptions(
-                            autoCompleteOptions.getWords(value, 20, true)
+                            autoCompleteOptions.getWords(
+                                value,
+                                MAX_SUGGESTIONS_SHOWN,
+                                true
+                            )
                         );
+                    }}
+                    onKeyDown={(event) => {
+                        console.log(event);
+                        switch (event.key) {
+                            case "Enter":
+                                addRegionIdsAndClearInput([value]);
+                                break;
+                        }
                     }}
                 />
                 {shouldShow && (
@@ -101,10 +122,12 @@ export const AutoCompleteTxtInput: React.FC<AutoCompleteTxtInputProps> = ({
                         )}
                         {currentOptions &&
                             currentOptions.length > 0 &&
-                            currentOptions.map((option, index) => (
+                            currentOptions.map((option) => (
                                 <AutoCompleteListItem
                                     option={option}
-                                    handleClick={addRegionAndClearInput}
+                                    handleClick={(option) =>
+                                        addRegionIdsAndClearInput([option])
+                                    }
                                 />
                             ))}
                     </ListGroup>
