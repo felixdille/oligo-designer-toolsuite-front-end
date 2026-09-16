@@ -890,7 +890,7 @@ class NCBIGenomicDatabase(BaseGenomicDatabase):
             ftp.cwd(release_dir)
 
             # Non-concrete releases (e.g. "current", "110", etc.) have an additional level of nesting
-            if "GCF" not in release:
+            while "GCF" not in release:
                 listing = self._get_subdirs(ftp)
                 if not listing:
                     raise RuntimeError("Empty release directory at NCBI.")
