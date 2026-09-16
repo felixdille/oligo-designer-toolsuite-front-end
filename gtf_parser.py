@@ -28,79 +28,10 @@ type GTF_PARSING_METHOD = Literal["ODT", "GTFREADER"]
 pio.get_chrome()
 
 
-class GeneExtractor(abc.ABC):
-    """Interface for extracting gene names/ids from a gtf file"""
-
-    @abc.abstractmethod
-    def get_genes(self, annotation_file: str) -> list[str]:
-        pass
-
-    @abc.abstractmethod
-    def get_name(self) -> str:
-        pass
-
-
-class PolarsGtfGeneExtractor(GeneExtractor):
-    def get_genes(self, annotation_file: str) -> list[str]:
-        return list(
-            set(
-                parse_gtf(annotation_file, attributes_to_extract=["gene_id"])
-                .select(["gene_id"])
-                .collect()["gene_id"]
-            )
-        )
-
-    def get_name(self) -> str:
-        return "gtf-polars"
-
-
-class PolarsBioGeneExtractor(GeneExtractor):
-    def get_genes(self, annotation_file: str) -> list[str]:
-        return list(
-            set(
-                polars_bio.scan_gtf(annotation_file, attr_fields=["gene_id"])
-                .select(["gene_id"])
-                .collect()["gene_id"]
-            )
-        )
-        print()
-
-    def get_name(self) -> str:
-        return "polars-bio"
-
-
-class GtfParseGeneExtractor(GeneExtractor):
-    def get_genes(self, annotation_file: str) -> list[str]:
-        return list(set(gtfparse.read_gtf(annotation_file)["gene_id"]))
-
-    def get_name(self) -> str:
-        return "gtfparse"
-
-
-class EccLibGeneExtractor(GeneExtractor):
-    def get_genes(self, annotation_file: str) -> list[str]:
-        with open(annotation_file) as f:
-            return list(set(eccLib.parseGTF(f).column("gene_id")))
-
-    def get_name(self) -> str:
-        return "eccLib"
-
-
-class OwnRustGeneExtractor(GeneExtractor):
-    def get_genes(self, annotation_file: str) -> list[str]:
-        return list(set(extract_genes_detached(annotation_file)))
-
-    def get_name(self) -> str:
-        return "own rust parser"
-
-
-class OwnGeneExtractor(GeneExtractor):
+class OwnGtfParser:
     def __init__(self):
         self.gff_parser = GffParser()
-        self.MEM_LIMIT = 1000000000
         self.WORKERS = multiprocessing.cpu_count()
-
-        self.LINE_BUFFER_SIZE = int(self.MEM_LIMIT / self.WORKERS)
 
     def parse_gtf_lines(self, message_buffer: SharedMemory):
         # print(message_buffer.buf)
@@ -147,9 +78,11 @@ class OwnGeneExtractor(GeneExtractor):
     def _prepare_message_buffers(self, annotation_file: str) -> list[SharedMemory]:
         file_size = os.path.getsize(annotation_file)
 
-        num_buffers = ceil(file_size / self.LINE_BUFFER_SIZE)
+        self.LINE_BUFFER_SIZE = ceil(file_size / self.WORKERS)
 
-        return [SharedMemory(create=True, size=self.LINE_BUFFER_SIZE + 1) for i in range(num_buffers)]
+        num_buffers = self.WORKERS
+
+        return [SharedMemory(create=True, size=self.LINE_BUFFER_SIZE) for i in range(num_buffers - 1)]
 
     def _fill_message_buffer(self, message: str, message_buffer: SharedMemory):
         encoded = message.encode()
@@ -176,21 +109,23 @@ class OwnGeneExtractor(GeneExtractor):
                 tasks = []
                 last_bit = break_line
 
-                index = 0
-                while True:
-                    text = f.read(self.LINE_BUFFER_SIZE - len(last_bit))
-                    text = last_bit + text
-                    text, last_bit_found = self.get_last_linebreak(text)
-                    last_bit = last_bit_found
+                for i in range(self.WORKERS):
+                    if i == self.WORKERS - 1:
+                        text = f.read()
+                        text = last_bit + text
+                        sh_texts.append(SharedMemory(create=True, size=len(text) + 1))
+                    else:
+                        text = f.read(self.LINE_BUFFER_SIZE - len(last_bit))
+                        text = last_bit + text
+                        text, last_bit_found = self.get_last_linebreak(text)
+                        last_bit = last_bit_found
 
                     if not line or len(text) == 0:
                         break
 
-                    self._fill_message_buffer(text, sh_texts[index])
+                    self._fill_message_buffer(text, sh_texts[i])
 
-                    tasks.append(p.apply_async(self.parse_gtf_lines, [sh_texts[index]]))
-
-                    index += 1
+                    tasks.append(p.apply_async(self.parse_gtf_lines, [sh_texts[i]]))
 
                 results = [task.get() for task in tasks]
 
@@ -204,25 +139,75 @@ class OwnGeneExtractor(GeneExtractor):
 
         return genes
 
-    def _get_genes_single(self, annotation_file: str) -> list[str]:
-        genes = []
-        with open(annotation_file) as f:
-            for line in f:
-                if not line.startswith("#"):
-                    break
 
-            while True:
-                lines = f.readlines(self.LINE_BUFFER_SIZE)
-                if not line or len(lines) == 0:
-                    break
+class GeneExtractor(abc.ABC):
+    """Interface for extracting gene names/ids from a gtf file"""
 
-                genes_part = self.parse_gtf_lines(lines)
-                genes.extend(genes_part)
-
-        return genes
-
+    @abc.abstractmethod
     def get_genes(self, annotation_file: str) -> list[str]:
-        return list(set(self._get_genes_multi(annotation_file)))
+        pass
+
+    @abc.abstractmethod
+    def get_name(self) -> str:
+        pass
+
+
+class PolarsGtfGeneExtractor(GeneExtractor):
+    def get_genes(self, annotation_file: str) -> list[str]:
+        return list(
+            set(
+                parse_gtf(annotation_file, attributes_to_extract=["gene_id"])
+                .select(["gene_id"])
+                .collect()["gene_id"]
+            )
+        )
+
+    def get_name(self) -> str:
+        return "gtf-polars"
+
+
+class PolarsBioGeneExtractor(GeneExtractor):
+    def get_genes(self, annotation_file: str) -> list[str]:
+        return list(
+            set(
+                polars_bio.scan_gtf(annotation_file, attr_fields=["gene_id"])
+                .select(["gene_id"])
+                .collect()["gene_id"]
+            )
+        )
+
+    def get_name(self) -> str:
+        return "polars-bio"
+
+
+class GtfParseGeneExtractor(GeneExtractor):
+    def get_genes(self, annotation_file: str) -> list[str]:
+        return list(set(gtfparse.read_gtf(annotation_file)["gene_id"]))
+
+    def get_name(self) -> str:
+        return "gtfparse"
+
+
+class EccLibGeneExtractor(GeneExtractor):
+    def get_genes(self, annotation_file: str) -> list[str]:
+        with open(annotation_file) as f:
+            return list(set(eccLib.parseGTF(f).column("gene_id")))
+
+    def get_name(self) -> str:
+        return "eccLib"
+
+
+class OwnRustGeneExtractor(GeneExtractor):
+    def get_genes(self, annotation_file: str) -> list[str]:
+        return list(set(extract_genes_detached(annotation_file)))
+
+    def get_name(self) -> str:
+        return "own rust parser"
+
+
+class OwnGeneExtractor(GeneExtractor):
+    def get_genes(self, annotation_file: str) -> list[str]:
+        return list(set(OwnGtfParser()._get_genes_multi(annotation_file)))
 
     def get_name(self) -> str:
         return "Own Parser"
@@ -242,15 +227,6 @@ class GtfReaderGeneExtractor(GeneExtractor):
 
     def get_name(self):
         return "gtfreader"
-
-
-class ReferenceGeneList:
-    def __init__(self, parser, annotation_file):
-        self.parser = parser
-        self.gene_ids = set(self.parser.get_genes(annotation_file))
-
-    def check(self, gene_ids: list[str]):
-        return
 
 
 class Benchmark:
@@ -276,6 +252,8 @@ class Benchmark:
         self.runs = runs
         self.name = name
 
+        self.counter = 0
+
         self.file_path = file_path
         self.df = None if self.file_path is None else pd.read_csv(file_path)
 
@@ -288,9 +266,10 @@ class Benchmark:
 
         results = []
         for i in range(self.runs):
-            for annotation_file_path in self.annotation_file_paths:
-                print(f"Running benchmark on file: {annotation_file_path}")
-                for gene_extractor in self.gene_extractors:
+            for gene_extractor in self.gene_extractors:
+                print(f"Running benchmark for: {gene_extractor.get_name()}")
+                for annotation_file_path in self.annotation_file_paths:
+                    print(f"Running benchmark on file: {annotation_file_path}")
                     results.append(
                         {
                             **self._run_single(
@@ -314,10 +293,6 @@ class Benchmark:
 
         duration = time_end - time_start
 
-        duration_s = duration / 10**3
-
-        print(f"Ran Benchmark for: {parser.get_name()}")
-
         annotation_file_name = annotation_file.rsplit("/", 1)[-1]
 
         with open(f"{self.reference_file_dir}{annotation_file_name}.genes.txt") as f:
@@ -327,16 +302,15 @@ class Benchmark:
             print(f"Differences: {set(_genes) ^ set(reference_gene_ids)}")
 
         return {
-            "Duration": duration_s,
+            "Duration": duration,
             "Annotation File": annotation_file.rsplit("/", 1)[-1],
             "Parser": parser.get_name(),
         }
 
-    def _sort(self):
-        self.df = self.df.sort_values("mean_duration")
+    def sort(self):
+        self.df = self.df.sort_values(["mean_duration", "Parser"], ascending=True)
 
     def visualize_benchmark(self, show=True):
-        self._sort()
         fig = px.histogram(
             self.df,
             x="Annotation File",
@@ -344,6 +318,13 @@ class Benchmark:
             color="Parser",
             barmode="group",
             height=400,
+            labels={
+                "mean_duration": "Mean Duration (s)",
+            },
+        )
+
+        fig.update_layout(
+            xaxis_tickfont_size=8,
         )
 
         if show:
@@ -365,47 +346,59 @@ class Benchmark:
         fig.write_image(f"{self._get_save_file_name()}.pdf")
 
     def save(self):
-        with open(f"{self.name if self.name else datetime.now(datetime.UTC)}.csv", "w+") as f:
+        with open(
+            f"{self.counter}-{self._get_save_file_name()}.csv",
+            "w+",
+        ) as f:
             self.df.to_csv(f)
+        self.counter += 1
+
+    def to_seconds(self):
+        self.df["Duration"] = self.df["Duration"] / 10**9
+
+    def save_latex_table(self):
+        with open(f"{self.counter}-{self._get_save_file_name()}.tex", "w+") as f:
+            df = self.df
+
+            full_table = ""
+
+            for annotation_file in set(df["Annotation File"]):
+                full_table += (
+                    df[df["Annotation File"] == annotation_file]
+                    .sort_values("mean_duration")[["Parser", "mean_duration", "std_deviation_duration"]]
+                    .to_latex(
+                        index=False,
+                        escape=True,
+                        caption=f"Benchmark results for parsers run on {annotation_file.replace('_', '\\_')}",
+                        label=f"tab:benchmark-{annotation_file}",
+                    )
+                )
+
+                full_table += "\n"
+
+            f.write(full_table)
+        self.counter += 1
 
 
 def main_benchmark():
-    benchmark = Benchmark("full-run")
+    benchmark = Benchmark("final-benchmark", 5)
     benchmark.run()
-    benchmark.aggregate_runs()
     benchmark.save()
+    benchmark.to_seconds()
+    benchmark.aggregate_runs()
+    benchmark.sort()
+    benchmark.save()
+    benchmark.save_visualization()
     benchmark.visualize_benchmark()
 
 
-def build_gene_list():
+def build_reference_ene_list():
     files = Benchmark("")._collect_gtf_files("/home/felix/Dokumente/gtf-benchmark/")
 
     for file in files:
         genes = list(set(GffParser().parse_annotation_from_gff(file)["gene_id"]))
         with open(f"{file}.genes.txt", "w+") as f:
             f.write("\n".join(genes))
-
-
-def test():
-    annotation_file = "/home/felix/Dokumente/gtf-benchmark/GCF_003935025.1_Abrus_2018_genomic.gtf"
-
-    genes = OwnGeneExtractor().get_genes(annotation_file)
-
-    print(len(genes))
-
-    genes_reference = ODTGeneExtractor().get_genes(annotation_file)
-
-    print(len(genes_reference))
-
-    differences = set(genes) ^ set(genes_reference)
-
-    print(differences)
-
-    with open("genes.txt", "w+") as f:
-        f.write("\n".join(genes))
-
-    with open("genes_reference.txt", "w+") as f:
-        f.write("\n".join(genes_reference))
 
 
 if __name__ == "__main__":
