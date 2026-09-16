@@ -1,0 +1,241 @@
+,Duration,Annotation File,Parser,Run
+0,45792369894,Rattus_norvegicus.GRCr8.116.gtf,ODT GffParser,0
+1,33886070199,Vulpes_vulpes.VulVul2.2.116.gtf,ODT GffParser,0
+2,307087275,GCF_009428885.1_ASM942888v1_genomic.gtf,ODT GffParser,0
+3,112445836763,GCF_000001405.40_GRCh38.p14_genomic.gtf,ODT GffParser,0
+4,16883428925,GCF_003935025.1_Abrus_2018_genomic.gtf,ODT GffParser,0
+5,34288627041,Danio_rerio.GRCz11.116.gtf,ODT GffParser,0
+6,18971317890,Rattus_norvegicus.GRCr8.116.gtf,gtfreader,0
+7,14223392640,Vulpes_vulpes.VulVul2.2.116.gtf,gtfreader,0
+8,124124630,GCF_009428885.1_ASM942888v1_genomic.gtf,gtfreader,0
+9,55218455361,GCF_000001405.40_GRCh38.p14_genomic.gtf,gtfreader,0
+10,6449744172,GCF_003935025.1_Abrus_2018_genomic.gtf,gtfreader,0
+11,13615504614,Danio_rerio.GRCz11.116.gtf,gtfreader,0
+12,2428971381,Rattus_norvegicus.GRCr8.116.gtf,gtf-polars,0
+13,1622844567,Vulpes_vulpes.VulVul2.2.116.gtf,gtf-polars,0
+14,30050504,GCF_009428885.1_ASM942888v1_genomic.gtf,gtf-polars,0
+15,5008007745,GCF_000001405.40_GRCh38.p14_genomic.gtf,gtf-polars,0
+16,563342538,GCF_003935025.1_Abrus_2018_genomic.gtf,gtf-polars,0
+17,1028127138,Danio_rerio.GRCz11.116.gtf,gtf-polars,0
+18,6869756763,Rattus_norvegicus.GRCr8.116.gtf,Own Parser,0
+19,5371875346,Vulpes_vulpes.VulVul2.2.116.gtf,Own Parser,0
+20,620562644,GCF_009428885.1_ASM942888v1_genomic.gtf,Own Parser,0
+21,16427676865,GCF_000001405.40_GRCh38.p14_genomic.gtf,Own Parser,0
+22,2806084834,GCF_003935025.1_Abrus_2018_genomic.gtf,Own Parser,0
+23,5030058307,Danio_rerio.GRCz11.116.gtf,Own Parser,0
+24,4641257348,Rattus_norvegicus.GRCr8.116.gtf,own rust parser,0
+25,2957625932,Vulpes_vulpes.VulVul2.2.116.gtf,own rust parser,0
+26,23376431,GCF_009428885.1_ASM942888v1_genomic.gtf,own rust parser,0
+27,9084359789,GCF_000001405.40_GRCh38.p14_genomic.gtf,own rust parser,0
+28,1364112253,GCF_003935025.1_Abrus_2018_genomic.gtf,own rust parser,0
+29,2787019701,Danio_rerio.GRCz11.116.gtf,own rust parser,0
+30,7644218710,Rattus_norvegicus.GRCr8.116.gtf,eccLib,0
+31,4485884787,Vulpes_vulpes.VulVul2.2.116.gtf,eccLib,0
+32,235238450,GCF_009428885.1_ASM942888v1_genomic.gtf,eccLib,0
+33,20845255604,GCF_000001405.40_GRCh38.p14_genomic.gtf,eccLib,0
+34,2585239469,GCF_003935025.1_Abrus_2018_genomic.gtf,eccLib,0
+35,4999705604,Danio_rerio.GRCz11.116.gtf,eccLib,0
+36,32255319397,Rattus_norvegicus.GRCr8.116.gtf,gtfparse,0
+37,24582395410,Vulpes_vulpes.VulVul2.2.116.gtf,gtfparse,0
+38,236694957,GCF_009428885.1_ASM942888v1_genomic.gtf,gtfparse,0
+39,79800339797,GCF_000001405.40_GRCh38.p14_genomic.gtf,gtfparse,0
+40,10887852958,GCF_003935025.1_Abrus_2018_genomic.gtf,gtfparse,0
+41,23181872972,Danio_rerio.GRCz11.116.gtf,gtfparse,0
+42,5014188899,Rattus_norvegicus.GRCr8.116.gtf,polars-bio,0
+43,3396771725,Vulpes_vulpes.VulVul2.2.116.gtf,polars-bio,0
+44,58483989,GCF_009428885.1_ASM942888v1_genomic.gtf,polars-bio,0
+45,9263870306,GCF_000001405.40_GRCh38.p14_genomic.gtf,polars-bio,0
+46,1449015389,GCF_003935025.1_Abrus_2018_genomic.gtf,polars-bio,0
+47,3042876393,Danio_rerio.GRCz11.116.gtf,polars-bio,0
+48,47189953580,Rattus_norvegicus.GRCr8.116.gtf,ODT GffParser,1
+49,36521927245,Vulpes_vulpes.VulVul2.2.116.gtf,ODT GffParser,1
+50,337875159,GCF_009428885.1_ASM942888v1_genomic.gtf,ODT GffParser,1
+51,125757900097,GCF_000001405.40_GRCh38.p14_genomic.gtf,ODT GffParser,1
+52,17471245163,GCF_003935025.1_Abrus_2018_genomic.gtf,ODT GffParser,1
+53,35097453254,Danio_rerio.GRCz11.116.gtf,ODT GffParser,1
+54,17606116384,Rattus_norvegicus.GRCr8.116.gtf,gtfreader,1
+55,13863950204,Vulpes_vulpes.VulVul2.2.116.gtf,gtfreader,1
+56,155813582,GCF_009428885.1_ASM942888v1_genomic.gtf,gtfreader,1
+57,48998989848,GCF_000001405.40_GRCh38.p14_genomic.gtf,gtfreader,1
+58,6475114582,GCF_003935025.1_Abrus_2018_genomic.gtf,gtfreader,1
+59,13301214539,Danio_rerio.GRCz11.116.gtf,gtfreader,1
+60,2376678003,Rattus_norvegicus.GRCr8.116.gtf,gtf-polars,1
+61,1520434504,Vulpes_vulpes.VulVul2.2.116.gtf,gtf-polars,1
+62,17442554,GCF_009428885.1_ASM942888v1_genomic.gtf,gtf-polars,1
+63,4539161909,GCF_000001405.40_GRCh38.p14_genomic.gtf,gtf-polars,1
+64,753744730,GCF_003935025.1_Abrus_2018_genomic.gtf,gtf-polars,1
+65,1600760281,Danio_rerio.GRCz11.116.gtf,gtf-polars,1
+66,7961032072,Rattus_norvegicus.GRCr8.116.gtf,Own Parser,1
+67,6383173618,Vulpes_vulpes.VulVul2.2.116.gtf,Own Parser,1
+68,1716402729,GCF_009428885.1_ASM942888v1_genomic.gtf,Own Parser,1
+69,19772769611,GCF_000001405.40_GRCh38.p14_genomic.gtf,Own Parser,1
+70,4257442320,GCF_003935025.1_Abrus_2018_genomic.gtf,Own Parser,1
+71,6725929238,Danio_rerio.GRCz11.116.gtf,Own Parser,1
+72,4619250820,Rattus_norvegicus.GRCr8.116.gtf,own rust parser,1
+73,3575586932,Vulpes_vulpes.VulVul2.2.116.gtf,own rust parser,1
+74,34041047,GCF_009428885.1_ASM942888v1_genomic.gtf,own rust parser,1
+75,10917447079,GCF_000001405.40_GRCh38.p14_genomic.gtf,own rust parser,1
+76,1674241142,GCF_003935025.1_Abrus_2018_genomic.gtf,own rust parser,1
+77,2363206596,Danio_rerio.GRCz11.116.gtf,own rust parser,1
+78,7131472019,Rattus_norvegicus.GRCr8.116.gtf,eccLib,1
+79,4410383406,Vulpes_vulpes.VulVul2.2.116.gtf,eccLib,1
+80,41933777,GCF_009428885.1_ASM942888v1_genomic.gtf,eccLib,1
+81,16626009758,GCF_000001405.40_GRCh38.p14_genomic.gtf,eccLib,1
+82,2885918885,GCF_003935025.1_Abrus_2018_genomic.gtf,eccLib,1
+83,4461663664,Danio_rerio.GRCz11.116.gtf,eccLib,1
+84,35656087708,Rattus_norvegicus.GRCr8.116.gtf,gtfparse,1
+85,26781661441,Vulpes_vulpes.VulVul2.2.116.gtf,gtfparse,1
+86,264440584,GCF_009428885.1_ASM942888v1_genomic.gtf,gtfparse,1
+87,84421620982,GCF_000001405.40_GRCh38.p14_genomic.gtf,gtfparse,1
+88,11583129879,GCF_003935025.1_Abrus_2018_genomic.gtf,gtfparse,1
+89,24907381891,Danio_rerio.GRCz11.116.gtf,gtfparse,1
+90,4762848572,Rattus_norvegicus.GRCr8.116.gtf,polars-bio,1
+91,3332480899,Vulpes_vulpes.VulVul2.2.116.gtf,polars-bio,1
+92,41711668,GCF_009428885.1_ASM942888v1_genomic.gtf,polars-bio,1
+93,9564715633,GCF_000001405.40_GRCh38.p14_genomic.gtf,polars-bio,1
+94,1451561309,GCF_003935025.1_Abrus_2018_genomic.gtf,polars-bio,1
+95,3003270515,Danio_rerio.GRCz11.116.gtf,polars-bio,1
+96,47318998172,Rattus_norvegicus.GRCr8.116.gtf,ODT GffParser,2
+97,36455818393,Vulpes_vulpes.VulVul2.2.116.gtf,ODT GffParser,2
+98,360771936,GCF_009428885.1_ASM942888v1_genomic.gtf,ODT GffParser,2
+99,116742238926,GCF_000001405.40_GRCh38.p14_genomic.gtf,ODT GffParser,2
+100,17695756189,GCF_003935025.1_Abrus_2018_genomic.gtf,ODT GffParser,2
+101,35309003567,Danio_rerio.GRCz11.116.gtf,ODT GffParser,2
+102,18109274978,Rattus_norvegicus.GRCr8.116.gtf,gtfreader,2
+103,13891026470,Vulpes_vulpes.VulVul2.2.116.gtf,gtfreader,2
+104,142524017,GCF_009428885.1_ASM942888v1_genomic.gtf,gtfreader,2
+105,52232249546,GCF_000001405.40_GRCh38.p14_genomic.gtf,gtfreader,2
+106,6610516322,GCF_003935025.1_Abrus_2018_genomic.gtf,gtfreader,2
+107,13525362321,Danio_rerio.GRCz11.116.gtf,gtfreader,2
+108,1726607227,Rattus_norvegicus.GRCr8.116.gtf,gtf-polars,2
+109,1238455275,Vulpes_vulpes.VulVul2.2.116.gtf,gtf-polars,2
+110,17777826,GCF_009428885.1_ASM942888v1_genomic.gtf,gtf-polars,2
+111,4611294670,GCF_000001405.40_GRCh38.p14_genomic.gtf,gtf-polars,2
+112,618819407,GCF_003935025.1_Abrus_2018_genomic.gtf,gtf-polars,2
+113,1033725151,Danio_rerio.GRCz11.116.gtf,gtf-polars,2
+114,8523937426,Rattus_norvegicus.GRCr8.116.gtf,Own Parser,2
+115,6817554056,Vulpes_vulpes.VulVul2.2.116.gtf,Own Parser,2
+116,1750555587,GCF_009428885.1_ASM942888v1_genomic.gtf,Own Parser,2
+117,21718223484,GCF_000001405.40_GRCh38.p14_genomic.gtf,Own Parser,2
+118,4224588320,GCF_003935025.1_Abrus_2018_genomic.gtf,Own Parser,2
+119,6485339018,Danio_rerio.GRCz11.116.gtf,Own Parser,2
+120,3607067381,Rattus_norvegicus.GRCr8.116.gtf,own rust parser,2
+121,2894429138,Vulpes_vulpes.VulVul2.2.116.gtf,own rust parser,2
+122,26264065,GCF_009428885.1_ASM942888v1_genomic.gtf,own rust parser,2
+123,10060454120,GCF_000001405.40_GRCh38.p14_genomic.gtf,own rust parser,2
+124,1393811975,GCF_003935025.1_Abrus_2018_genomic.gtf,own rust parser,2
+125,2378192157,Danio_rerio.GRCz11.116.gtf,own rust parser,2
+126,7433858653,Rattus_norvegicus.GRCr8.116.gtf,eccLib,2
+127,4605308345,Vulpes_vulpes.VulVul2.2.116.gtf,eccLib,2
+128,46740669,GCF_009428885.1_ASM942888v1_genomic.gtf,eccLib,2
+129,32772958309,GCF_000001405.40_GRCh38.p14_genomic.gtf,eccLib,2
+130,3786966942,GCF_003935025.1_Abrus_2018_genomic.gtf,eccLib,2
+131,4809605121,Danio_rerio.GRCz11.116.gtf,eccLib,2
+132,34467221732,Rattus_norvegicus.GRCr8.116.gtf,gtfparse,2
+133,25983635430,Vulpes_vulpes.VulVul2.2.116.gtf,gtfparse,2
+134,270079986,GCF_009428885.1_ASM942888v1_genomic.gtf,gtfparse,2
+135,84897728961,GCF_000001405.40_GRCh38.p14_genomic.gtf,gtfparse,2
+136,11884624892,GCF_003935025.1_Abrus_2018_genomic.gtf,gtfparse,2
+137,25954038610,Danio_rerio.GRCz11.116.gtf,gtfparse,2
+138,4767661556,Rattus_norvegicus.GRCr8.116.gtf,polars-bio,2
+139,3326034275,Vulpes_vulpes.VulVul2.2.116.gtf,polars-bio,2
+140,49921677,GCF_009428885.1_ASM942888v1_genomic.gtf,polars-bio,2
+141,9568912356,GCF_000001405.40_GRCh38.p14_genomic.gtf,polars-bio,2
+142,1451460439,GCF_003935025.1_Abrus_2018_genomic.gtf,polars-bio,2
+143,3043919610,Danio_rerio.GRCz11.116.gtf,polars-bio,2
+144,48039743351,Rattus_norvegicus.GRCr8.116.gtf,ODT GffParser,3
+145,37360598458,Vulpes_vulpes.VulVul2.2.116.gtf,ODT GffParser,3
+146,360284404,GCF_009428885.1_ASM942888v1_genomic.gtf,ODT GffParser,3
+147,117377745580,GCF_000001405.40_GRCh38.p14_genomic.gtf,ODT GffParser,3
+148,17670455043,GCF_003935025.1_Abrus_2018_genomic.gtf,ODT GffParser,3
+149,34960284302,Danio_rerio.GRCz11.116.gtf,ODT GffParser,3
+150,17985170824,Rattus_norvegicus.GRCr8.116.gtf,gtfreader,3
+151,13920604796,Vulpes_vulpes.VulVul2.2.116.gtf,gtfreader,3
+152,130770334,GCF_009428885.1_ASM942888v1_genomic.gtf,gtfreader,3
+153,51541381560,GCF_000001405.40_GRCh38.p14_genomic.gtf,gtfreader,3
+154,6551591721,GCF_003935025.1_Abrus_2018_genomic.gtf,gtfreader,3
+155,13392501308,Danio_rerio.GRCz11.116.gtf,gtfreader,3
+156,1524601700,Rattus_norvegicus.GRCr8.116.gtf,gtf-polars,3
+157,1217553925,Vulpes_vulpes.VulVul2.2.116.gtf,gtf-polars,3
+158,13921156,GCF_009428885.1_ASM942888v1_genomic.gtf,gtf-polars,3
+159,4404336256,GCF_000001405.40_GRCh38.p14_genomic.gtf,gtf-polars,3
+160,568617509,GCF_003935025.1_Abrus_2018_genomic.gtf,gtf-polars,3
+161,1728465158,Danio_rerio.GRCz11.116.gtf,gtf-polars,3
+162,8110890145,Rattus_norvegicus.GRCr8.116.gtf,Own Parser,3
+163,6646333409,Vulpes_vulpes.VulVul2.2.116.gtf,Own Parser,3
+164,1812054201,GCF_009428885.1_ASM942888v1_genomic.gtf,Own Parser,3
+165,20023234136,GCF_000001405.40_GRCh38.p14_genomic.gtf,Own Parser,3
+166,4285159518,GCF_003935025.1_Abrus_2018_genomic.gtf,Own Parser,3
+167,6708054975,Danio_rerio.GRCz11.116.gtf,Own Parser,3
+168,4649247995,Rattus_norvegicus.GRCr8.116.gtf,own rust parser,3
+169,3644368821,Vulpes_vulpes.VulVul2.2.116.gtf,own rust parser,3
+170,31327864,GCF_009428885.1_ASM942888v1_genomic.gtf,own rust parser,3
+171,10822969587,GCF_000001405.40_GRCh38.p14_genomic.gtf,own rust parser,3
+172,1333020126,GCF_003935025.1_Abrus_2018_genomic.gtf,own rust parser,3
+173,2289609799,Danio_rerio.GRCz11.116.gtf,own rust parser,3
+174,7159532195,Rattus_norvegicus.GRCr8.116.gtf,eccLib,3
+175,4455696747,Vulpes_vulpes.VulVul2.2.116.gtf,eccLib,3
+176,47719417,GCF_009428885.1_ASM942888v1_genomic.gtf,eccLib,3
+177,31241494654,GCF_000001405.40_GRCh38.p14_genomic.gtf,eccLib,3
+178,3851793313,GCF_003935025.1_Abrus_2018_genomic.gtf,eccLib,3
+179,4741540675,Danio_rerio.GRCz11.116.gtf,eccLib,3
+180,34714778433,Rattus_norvegicus.GRCr8.116.gtf,gtfparse,3
+181,26174855152,Vulpes_vulpes.VulVul2.2.116.gtf,gtfparse,3
+182,254228082,GCF_009428885.1_ASM942888v1_genomic.gtf,gtfparse,3
+183,82541806701,GCF_000001405.40_GRCh38.p14_genomic.gtf,gtfparse,3
+184,12041836667,GCF_003935025.1_Abrus_2018_genomic.gtf,gtfparse,3
+185,24836761600,Danio_rerio.GRCz11.116.gtf,gtfparse,3
+186,5001049515,Rattus_norvegicus.GRCr8.116.gtf,polars-bio,3
+187,3468077593,Vulpes_vulpes.VulVul2.2.116.gtf,polars-bio,3
+188,48279172,GCF_009428885.1_ASM942888v1_genomic.gtf,polars-bio,3
+189,9564284906,GCF_000001405.40_GRCh38.p14_genomic.gtf,polars-bio,3
+190,1441472715,GCF_003935025.1_Abrus_2018_genomic.gtf,polars-bio,3
+191,3065519010,Danio_rerio.GRCz11.116.gtf,polars-bio,3
+192,48713079412,Rattus_norvegicus.GRCr8.116.gtf,ODT GffParser,4
+193,37658353499,Vulpes_vulpes.VulVul2.2.116.gtf,ODT GffParser,4
+194,343902488,GCF_009428885.1_ASM942888v1_genomic.gtf,ODT GffParser,4
+195,116971086586,GCF_000001405.40_GRCh38.p14_genomic.gtf,ODT GffParser,4
+196,18009852187,GCF_003935025.1_Abrus_2018_genomic.gtf,ODT GffParser,4
+197,35395180815,Danio_rerio.GRCz11.116.gtf,ODT GffParser,4
+198,18045105791,Rattus_norvegicus.GRCr8.116.gtf,gtfreader,4
+199,13867984760,Vulpes_vulpes.VulVul2.2.116.gtf,gtfreader,4
+200,132126361,GCF_009428885.1_ASM942888v1_genomic.gtf,gtfreader,4
+201,50088976896,GCF_000001405.40_GRCh38.p14_genomic.gtf,gtfreader,4
+202,6655364567,GCF_003935025.1_Abrus_2018_genomic.gtf,gtfreader,4
+203,13588266169,Danio_rerio.GRCz11.116.gtf,gtfreader,4
+204,2250420114,Rattus_norvegicus.GRCr8.116.gtf,gtf-polars,4
+205,1678327944,Vulpes_vulpes.VulVul2.2.116.gtf,gtf-polars,4
+206,20747757,GCF_009428885.1_ASM942888v1_genomic.gtf,gtf-polars,4
+207,4217478368,GCF_000001405.40_GRCh38.p14_genomic.gtf,gtf-polars,4
+208,615474870,GCF_003935025.1_Abrus_2018_genomic.gtf,gtf-polars,4
+209,1024296512,Danio_rerio.GRCz11.116.gtf,gtf-polars,4
+210,8394322416,Rattus_norvegicus.GRCr8.116.gtf,Own Parser,4
+211,6658376154,Vulpes_vulpes.VulVul2.2.116.gtf,Own Parser,4
+212,1849283090,GCF_009428885.1_ASM942888v1_genomic.gtf,Own Parser,4
+213,19493351255,GCF_000001405.40_GRCh38.p14_genomic.gtf,Own Parser,4
+214,4429608663,GCF_003935025.1_Abrus_2018_genomic.gtf,Own Parser,4
+215,7074438406,Danio_rerio.GRCz11.116.gtf,Own Parser,4
+216,4595293623,Rattus_norvegicus.GRCr8.116.gtf,own rust parser,4
+217,3568670313,Vulpes_vulpes.VulVul2.2.116.gtf,own rust parser,4
+218,33599897,GCF_009428885.1_ASM942888v1_genomic.gtf,own rust parser,4
+219,10897235821,GCF_000001405.40_GRCh38.p14_genomic.gtf,own rust parser,4
+220,1705667257,GCF_003935025.1_Abrus_2018_genomic.gtf,own rust parser,4
+221,3279585135,Danio_rerio.GRCz11.116.gtf,own rust parser,4
+222,6986594913,Rattus_norvegicus.GRCr8.116.gtf,eccLib,4
+223,4331728477,Vulpes_vulpes.VulVul2.2.116.gtf,eccLib,4
+224,46994049,GCF_009428885.1_ASM942888v1_genomic.gtf,eccLib,4
+225,16747658330,GCF_000001405.40_GRCh38.p14_genomic.gtf,eccLib,4
+226,2711094304,GCF_003935025.1_Abrus_2018_genomic.gtf,eccLib,4
+227,4485079453,Danio_rerio.GRCz11.116.gtf,eccLib,4
+228,34982371152,Rattus_norvegicus.GRCr8.116.gtf,gtfparse,4
+229,26931237568,Vulpes_vulpes.VulVul2.2.116.gtf,gtfparse,4
+230,276501606,GCF_009428885.1_ASM942888v1_genomic.gtf,gtfparse,4
+231,83083092382,GCF_000001405.40_GRCh38.p14_genomic.gtf,gtfparse,4
+232,11929186024,GCF_003935025.1_Abrus_2018_genomic.gtf,gtfparse,4
+233,25531600097,Danio_rerio.GRCz11.116.gtf,gtfparse,4
+234,4710843942,Rattus_norvegicus.GRCr8.116.gtf,polars-bio,4
+235,3452644097,Vulpes_vulpes.VulVul2.2.116.gtf,polars-bio,4
+236,41118541,GCF_009428885.1_ASM942888v1_genomic.gtf,polars-bio,4
+237,9262307381,GCF_000001405.40_GRCh38.p14_genomic.gtf,polars-bio,4
+238,1427433135,GCF_003935025.1_Abrus_2018_genomic.gtf,polars-bio,4
+239,3038456328,Danio_rerio.GRCz11.116.gtf,polars-bio,4

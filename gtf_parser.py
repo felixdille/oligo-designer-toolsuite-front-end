@@ -46,11 +46,6 @@ class OwnGtfParser:
 
             fields = split_line[:8]
 
-            if len(fields) >= 3:
-                entry_type = fields[2]
-                if entry_type != "gene":
-                    continue
-
             attributes = "\t".join(split_line[8:])
 
             fields = self.gff_parser._split_fields(attributes)
@@ -388,6 +383,7 @@ def main_benchmark():
     benchmark.aggregate_runs()
     benchmark.sort()
     benchmark.save()
+    benchmark.save_latex_table()
     benchmark.save_visualization()
     benchmark.visualize_benchmark()
 
