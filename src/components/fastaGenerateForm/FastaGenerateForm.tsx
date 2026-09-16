@@ -33,6 +33,7 @@ import type { DropDown, NestedObject } from "../componentTypes";
 import { getDefaultFormState, type RJSFSchema } from "@rjsf/utils";
 import { customizeValidator } from "@rjsf/validator-ajv8";
 import Ajv2020 from "ajv/dist/2020";
+import { showToast } from "../../utils/toastUtil";
 
 // Props for FastaGenerateForm, containing current form state and handlers for change/removal.
 interface FastaGenerateFormProps {
@@ -241,6 +242,15 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                 formState.selectedSource === "ncbi"
                     ? formState.formDataNcbi
                     : formState.formDataEnsembl;
+            if (currentFormState.source_params.annotation_release === "") {
+                showToast({
+                    title: "An Annotation Release must be selected",
+                    content:
+                        "It seems like the available annotation releases are still loading. Please wait",
+                    type: "danger",
+                });
+                return;
+            }
             onChange(currentFormState);
             closeModal();
         };

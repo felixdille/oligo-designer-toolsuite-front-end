@@ -26,6 +26,7 @@ from backend.genomic_databases import (
     get_genomic_database_by_region_form,
 )
 from backend.routes.event_stream import get_session_channel_id_checked
+from backend.utils import genomic_region_form_validation_error_message, validate_genomic_region_form
 from backend.worker.models import GenomicRegionGeneratorAdapter
 from backend.worker.task_index import Tasks
 
@@ -65,15 +66,25 @@ def genomic_build_autocomplete_for_region():
         try:
             GenomicRegionGeneratorAdapter.validate_python(region_form)
         except ValidationError:
-            abort(
-                HTTPStatus.BAD_REQUEST,
-                "Could not validate the Genomic Region Generator Form",
-            )
+            region_id_map[region_form_id] = {"state": "failed", "cause": "incorrect Genomic Region Form"}
+            continue
 
         try:
             genomic_entity = GenomicEntity.from_region_form(region_form)
         except ValueError:
-            abort(HTTPStatus.BAD_REQUEST, "Could not parse Genomic Region Generator Form")
+            region_id_map[region_form_id] = {
+                "state": "failed",
+                "cause": "Could not parse Genomic Region Generator Form",
+            }
+            continue
+
+        result = validate_genomic_region_form(region_form)
+        if result is not None:
+            region_id_map[region_form_id] = {
+                "state": "failed",
+                "cause": genomic_region_form_validation_error_message(result),
+            }
+            continue
 
         genomic_database = get_genomic_database_by_region_form(region_form, cache_dir=Config.CACHE_DIR)
 

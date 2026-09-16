@@ -4,6 +4,7 @@ import type { GenomicForm } from "../components/fastaGenerateForm/types";
 import axios from "axios";
 import { BACKEND_URL } from "../config";
 import { Trie } from "data-structure-typed";
+import { showToast } from "../utils/toastUtil";
 
 interface AutoCompleteRegion {
     suggestions: string[] | null;
@@ -11,7 +12,9 @@ interface AutoCompleteRegion {
 }
 type NewRegionResponse = Record<
     string,
-    { state: "miss"; task_id: string } | { state: "hit"; suggestions: string[] }
+    | { state: "miss"; task_id: string }
+    | { state: "hit"; suggestions: string[] }
+    | { state: "failed"; cause: string }
 >;
 
 interface AutoCompleteOptionAnswer {
@@ -70,7 +73,13 @@ export const AutocompleteProvider = ({
                         key,
                         { suggestions: value.suggestions, active: true },
                     ]);
-                } else {
+                } else if (value.state === "failed") {
+                    showToast({
+                        type: "danger",
+                        title: "Could not create autocomplete suggestions",
+                        content: value.cause,
+                    });
+                } else if (value.state === "miss") {
                     newRegions.push([key, { suggestions: null, active: true }]);
                     newTaskIds.push([value.task_id, key]);
                 }

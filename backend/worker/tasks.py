@@ -28,7 +28,7 @@ from backend.genomic_databases import (
     fetch_dropdown_options,
     get_genomic_database_by_region_form,
 )
-from backend.utils import utc_now
+from backend.utils import genomic_region_form_validation_error_message, utc_now, validate_genomic_region_form
 from backend.worker.autocomplete_preparator import build_autocomplete_options
 from backend.worker.celery import app
 from backend.worker.genomic_region_generator_runner import GenomicRegionGeneratorRunner
@@ -663,6 +663,19 @@ def validate_gene_id_list(form_data: dict[str, Any], pipeline_name: str):
         )
 
 
+def validate_genomic_region_inputs(form_data, pipeline_name):
+    errors = []
+
+    for genomic_region_form_inputs in PIPELINE_GENOMIC_INPUT.get(pipeline_name, []):
+        for genomic_region_form in glom(form_data, genomic_region_form_inputs):
+            result = validate_genomic_region_form(genomic_region_form)
+            if result is not None:
+                errors.append(genomic_region_form_validation_error_message(result))
+
+    if errors:
+        raise ODTValidationError(f"Errors during Genomic Regions validation:\n{'\n'.join(errors)}")
+
+
 @app.task(base=ValidationTask)
 def validate_pipeline_config(form_data: dict[str, Any], pipeline_name: str):
 
@@ -679,3 +692,4 @@ def validate_pipeline_config(form_data: dict[str, Any], pipeline_name: str):
         raise ODTValidationError(f"Invalid input: {v_err!s}")
 
     validate_gene_id_list(form_data, pipeline_name)
+    validate_genomic_region_inputs(form_data, pipeline_name)
