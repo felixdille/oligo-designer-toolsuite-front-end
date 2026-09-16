@@ -33,7 +33,6 @@ export const AutoCompleteTxtInput: React.FC<AutoCompleteTxtInputProps> = ({
     onBlur,
     addRegionIds,
 }) => {
-    const [currentOptions, setCurrentOptions] = useState<string[]>([]);
     const [value, setValue] = useState(formData ? (formData as string) : "");
     const [shouldShow, setShouldShow] = useState(false);
 
@@ -51,13 +50,6 @@ export const AutoCompleteTxtInput: React.FC<AutoCompleteTxtInputProps> = ({
 
         setValue(input);
 
-        const matchingOptions = autoCompleteOptions.getWords(
-            input,
-            MAX_SUGGESTIONS_SHOWN,
-            true
-        );
-        setCurrentOptions(matchingOptions);
-
         if (input.includes(",")) {
             const regionIds = input
                 .split(",")
@@ -66,6 +58,12 @@ export const AutoCompleteTxtInput: React.FC<AutoCompleteTxtInputProps> = ({
             addRegionIdsAndClearInput(regionIds);
         }
     };
+
+    const currentOptions = autoCompleteOptions.getWords(
+        value,
+        MAX_SUGGESTIONS_SHOWN,
+        true
+    );
 
     return (
         <>
@@ -84,13 +82,6 @@ export const AutoCompleteTxtInput: React.FC<AutoCompleteTxtInputProps> = ({
                     className="rounded-0"
                     onFocus={() => {
                         setShouldShow(true);
-                        setCurrentOptions(
-                            autoCompleteOptions.getWords(
-                                value,
-                                MAX_SUGGESTIONS_SHOWN,
-                                true
-                            )
-                        );
                     }}
                     onKeyDown={(event) => {
                         switch (event.key) {
