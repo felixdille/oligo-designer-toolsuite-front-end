@@ -17,6 +17,7 @@
 !/backend/types.py
 !/backend/models.py
 !/backend/utils.py
+!/backend/autocomplete_utils.py
 !/backend/exceptions.py
 !/backend/pyproject.toml
 !/backend/environment.yml
