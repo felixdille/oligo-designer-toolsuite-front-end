@@ -11,7 +11,6 @@ from http import HTTPStatus
 from typing import Any
 
 import dogpile.cache.api
-from celery.result import AsyncResult
 from flask import Blueprint, abort, jsonify, request
 from pydantic import ValidationError
 
@@ -102,16 +101,3 @@ def genomic_build_autocomplete_for_region():
             region_id_map[region_form_id] = {"state": "miss", "task_id": result.id}
 
     return jsonify(region_id_map), 200
-
-
-@genomic_bp.route("/api/genomic/autocomplete-options", methods=["POST"])
-def genomic_get_autocomplete_for_region():
-    region_form_ids = request.get_json()
-
-    autoCompleteOptions = {}
-    for region_form_id in region_form_ids:
-        result = AsyncResult(region_form_id, app=celery_app)
-        if result.state == "SUCCESS":
-            autoCompleteOptions[region_form_id] = result.get()
-
-    return jsonify(autoCompleteOptions), 200
