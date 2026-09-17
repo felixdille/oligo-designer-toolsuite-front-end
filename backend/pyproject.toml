@@ -27,7 +27,7 @@ server = [
     "prometheus-flask-exporter >=0.23, <0.24",
     "PyMongo >=4, <5",
 ]
-worker = [{ include-group = "shared" }, "biopython >=1.86, <20", "gtf-polars >=0.1, <1"]
+worker = [{ include-group = "shared" }, "biopython >=1.86, <2", "gtf-polars >=0.1, <1"]
 test = [
     { include-group = "server" },
     "coverage >=7.12, <8",
@@ -43,7 +43,6 @@ dev = [
     { include-group = "test" },
     { include-group = "lint" },
     { include-group = "types" },
-    "debugpy"
 ]
 
 [tool.pytest]
@@ -72,4 +71,3 @@ project-excludes = [
 infer-with-first-use = false
 preset = "default"
 min-severity = "warn"
-conda-environment = "odt"
