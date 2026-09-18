@@ -91,7 +91,11 @@ def genomic_build_autocomplete_for_region():
 
         cached = generic_cache_region.get(cache_key)
 
-        if cached is not dogpile.cache.api.NO_VALUE and genomic_entity.release.startswith("GCF"):
+        is_stable_release = (
+            genomic_database.name == "ncbi" and genomic_entity.release.startswith("GCF")
+        ) or (genomic_database.name == "ensembl" and genomic_entity.release != "current")
+
+        if cached is not dogpile.cache.api.NO_VALUE and is_stable_release:
             region_id_map[region_form_id] = {"state": "hit", "suggestions": cached["autocomplete_options"]}
         else:
             result = celery_app.send_task(
