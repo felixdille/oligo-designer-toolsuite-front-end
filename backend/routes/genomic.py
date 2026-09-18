@@ -91,13 +91,18 @@ def genomic_build_autocomplete_for_region():
 
         cached = generic_cache_region.get(cache_key)
 
-        if cached is not dogpile.cache.api.NO_VALUE and genomic_entity.release != "current":
+        if cached is not dogpile.cache.api.NO_VALUE and genomic_entity.release.startswith("GCF"):
             region_id_map[region_form_id] = {"state": "hit", "suggestions": cached["autocomplete_options"]}
         else:
             result = celery_app.send_task(
                 Tasks.GENERATE_AND_PUBLISH_AUTOCOMPLETE_OPTIONS,
                 args=(region_form, asdict(genomic_entity), channel_id),
             )
-            region_id_map[region_form_id] = {"state": "miss", "task_id": result.id}
+            suggestions = cached["autocomplete_options"] if cached is not dogpile.cache.api.NO_VALUE else None
+            region_id_map[region_form_id] = {
+                "state": "miss",
+                "task_id": result.id,
+                "suggestions": suggestions,
+            }
 
     return jsonify(region_id_map), 200

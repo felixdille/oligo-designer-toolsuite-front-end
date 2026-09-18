@@ -12,7 +12,7 @@ interface AutoCompleteRegion {
 }
 type NewRegionResponse = Record<
     string,
-    | { state: "miss"; task_id: string }
+    | { state: "miss"; task_id: string; suggestions: null | string[] }
     | { state: "hit"; suggestions: string[] }
     | { state: "failed"; cause: string }
 >;
@@ -80,7 +80,10 @@ export const AutocompleteProvider = ({
                         content: value.cause,
                     });
                 } else if (value.state === "miss") {
-                    newRegions.push([key, { suggestions: null, active: true }]);
+                    newRegions.push([
+                        key,
+                        { suggestions: value.suggestions, active: true },
+                    ]);
                     newTaskIds.push([value.task_id, key]);
                 }
             });
@@ -205,18 +208,18 @@ export const AutocompleteProvider = ({
             const currentSuggestions =
                 regionIdToAutoCompleteMap.get(regionFormId)?.suggestions;
 
+            taskIdToRegionIdMap.delete(taskId);
+
+            if (taskIdToRegionIdMap.size == 0) {
+                setIsLoading(false);
+            }
+
             if (
                 autoCompleteAnswer.status === "cached" &&
                 currentSuggestions !== undefined &&
                 currentSuggestions !== null
             ) {
                 return;
-            }
-
-            taskIdToRegionIdMap.delete(taskId);
-
-            if (taskIdToRegionIdMap.size == 0) {
-                setIsLoading(false);
             }
 
             setTaskIdToRegionIdMap(new Map(taskIdToRegionIdMap));
