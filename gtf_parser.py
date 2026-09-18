@@ -306,7 +306,7 @@ class Benchmark:
         self.df = self.df.sort_values(["mean_duration", "Parser"], ascending=True)
 
     def visualize_benchmark(self, show=True):
-        fig = px.histogram(
+        fig = px.bar(
             self.df,
             x="Annotation File",
             y="mean_duration",
